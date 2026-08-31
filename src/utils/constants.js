@@ -1,0 +1,2 @@
+export const ACTIVATION_AMOUNT = 500
+export const DEFAULT_BIC = 'BNPAFRPPXXX'
