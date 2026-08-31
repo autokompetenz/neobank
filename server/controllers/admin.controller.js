@@ -2,6 +2,7 @@ import { pool } from '../config/database.js';
 import { toAccount, toTransactionRow, toUserProfile } from '../utils/serialize.js';
 import { insertNotification } from '../utils/notify.js';
 import { sendEventToUser } from '../routes/events.routes.js';
+import { secureCode, secureInt } from '../utils/secure.js';
 
 const fmt = (n) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n || 0);
 
@@ -222,10 +223,10 @@ export async function verifyUser(req, res) {
 
 function generateIban() {
   const countryCode = 'FR';
-  const checkDigits = Math.floor(Math.random() * 100).toString().padStart(2, '0');
-  const bankCode = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
-  const accountNumber = Math.floor(Math.random() * 10000000000).toString().padStart(11, '0');
-  const nationalCheck = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+  const checkDigits = secureInt(100).toString().padStart(2, '0');
+  const bankCode = secureInt(100000).toString().padStart(5, '0');
+  const accountNumber = secureInt(10000000000).toString().padStart(11, '0');
+  const nationalCheck = secureInt(100).toString().padStart(2, '0');
   return `${countryCode}${checkDigits}${bankCode}${accountNumber}${nationalCheck}`;
 }
 
@@ -920,15 +921,11 @@ export async function generateWithdrawalCode(req, res) {
       return res.status(400).json({ error: 'Cette étape est déjà complétée' });
     }
     
-    // Générer un code unique
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    // Générer un code unique (cryptographiquement sûr)
     let code;
     let codeExists;
     do {
-      code = '';
-      for (let i = 0; i < 8; i++) {
-        code += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
+      code = secureCode(8);
       codeExists = await cli.query(`SELECT id FROM withdrawal_codes WHERE code = $1`, [code]);
     } while (codeExists.rowCount > 0);
     
@@ -1042,8 +1039,15 @@ export async function approveWithdrawalProof(req, res) {
       [proofData.withdrawal_request_id, proofData.step_order]
     );
     
-    // Débiter le montant de l'étape du solde du client
-    await cli.query(`UPDATE users SET balance = balance - $1 WHERE id = $2`, [proofData.step_amount, proofData.user_id]);
+    // Débiter le montant de l'étape du solde du client (garde anti-solde négatif)
+    const debit = await cli.query(
+      `UPDATE users SET balance = balance - $1 WHERE id = $2 AND balance >= $1`,
+      [proofData.step_amount, proofData.user_id]
+    );
+    if (debit.rowCount === 0) {
+      await cli.query('ROLLBACK');
+      return res.status(400).json({ error: 'Solde insuffisant pour valider cette étape' });
+    }
     
     // Créer la transaction pour cette étape
     await cli.query(
@@ -1128,8 +1132,15 @@ export async function approveWithdrawalProofByIndex(req, res) {
       [proofData.withdrawal_request_id, proofData.step_order]
     );
     
-    // Débiter le montant de l'étape du solde du client
-    await cli.query(`UPDATE users SET balance = balance - $1 WHERE id = $2`, [proofData.step_amount, proofData.user_id]);
+    // Débiter le montant de l'étape du solde du client (garde anti-solde négatif)
+    const debit = await cli.query(
+      `UPDATE users SET balance = balance - $1 WHERE id = $2 AND balance >= $1`,
+      [proofData.step_amount, proofData.user_id]
+    );
+    if (debit.rowCount === 0) {
+      await cli.query('ROLLBACK');
+      return res.status(400).json({ error: 'Solde insuffisant pour valider cette étape' });
+    }
     
     // Créer la transaction pour cette étape
     await cli.query(
@@ -1334,12 +1345,10 @@ export async function adminDecideWithdrawal(req, res) {
       const finalClientType = (clientType || 'standard').toUpperCase();
       const validPrefixes = ['STANDARD', 'PREMIUM', 'VIP', 'BUSINESS'];
       const codePrefix = validPrefixes.includes(finalClientType) ? finalClientType : 'CLIENT';
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
       let code;
       let codeExists;
       do {
-        let suffix = '';
-        for (let i = 0; i < 4; i++) suffix += chars.charAt(Math.floor(Math.random() * chars.length));
+        const suffix = secureCode(4);
         code = codePrefix + suffix;
         codeExists = await cli.query(`SELECT id FROM withdrawal_codes WHERE code = $1`, [code]);
       } while (codeExists.rowCount > 0);

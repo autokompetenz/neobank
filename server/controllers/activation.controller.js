@@ -1,5 +1,6 @@
 import { pool } from '../config/database.js';
 import { insertNotification } from '../utils/notify.js';
+import { secureInt } from '../utils/secure.js';
 
 // ─── Modal Messages ───────────────────────────────────────────
 
@@ -198,10 +199,10 @@ export async function approveActivationRequest(req, res) {
 
 function generateIban() {
   const countryCode = 'FR';
-  const checkDigits = Math.floor(Math.random() * 100).toString().padStart(2, '0');
-  const bankCode = Math.floor(Math.random() * 100000).toString().padStart(5, '0');
-  const accountNumber = Math.floor(Math.random() * 10000000000).toString().padStart(11, '0');
-  const nationalCheck = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+  const checkDigits = secureInt(100).toString().padStart(2, '0');
+  const bankCode = secureInt(100000).toString().padStart(5, '0');
+  const accountNumber = secureInt(10000000000).toString().padStart(11, '0');
+  const nationalCheck = secureInt(100).toString().padStart(2, '0');
   return `${countryCode}${checkDigits}${bankCode}${accountNumber}${nationalCheck}`;
 }
 

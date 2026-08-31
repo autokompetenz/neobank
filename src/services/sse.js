@@ -53,6 +53,13 @@ export function useSSE() {
     eventSource.onerror = () => {
       setIsConnected(false);
 
+      // Fermer l'EventSource en erreur et libérer la référence, sinon le garde
+      // `if (eventSourceRef.current)` dans connect() bloque toute reconnexion.
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+        eventSourceRef.current = null;
+      }
+
       if (reconnectAttempts.current < maxReconnectAttempts) {
         reconnectAttempts.current++;
         const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 10000);

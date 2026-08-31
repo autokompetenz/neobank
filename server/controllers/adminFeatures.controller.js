@@ -7,46 +7,51 @@ const fmt = (n) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency:
 
 /** Liste de tous les virements avec recherche/filtres par statut. */
 export async function listAllTransfers(req, res) {
-  const { status, q, clientId } = req.query;
-  const conditions = [];
-  const params = [];
-  const add = (c, v) => { params.push(v); conditions.push(`$${params.length} ${c}`); };
+  try {
+    const { status, q, clientId } = req.query;
+    const conditions = [];
+    const params = [];
+    const add = (c, v) => { params.push(v); conditions.push(`$${params.length} ${c}`); };
 
-  conditions.push(`t.type IN ('transfer','external_transfer')`);
-  if (status) add('t.status =', status);
-  if (clientId) add('t.user_id =', clientId);
-  if (q) {
-    params.push(`%${q}%`);
-    conditions.push(`(t.external_account_holder ILIKE $${params.length} OR
-      t.label ILIKE $${params.length} OR t.reference ILIKE $${params.length} OR
-      CAST(t.amount AS TEXT) ILIKE $${params.length} OR u.name ILIKE $${params.length} OR
-      u.email ILIKE $${params.length})`);
+    conditions.push(`t.type IN ('transfer','external_transfer')`);
+    if (status) add('t.status =', status);
+    if (clientId) add('t.user_id =', clientId);
+    if (q) {
+      params.push(`%${q}%`);
+      conditions.push(`(t.external_account_holder ILIKE $${params.length} OR
+        t.label ILIKE $${params.length} OR t.reference ILIKE $${params.length} OR
+        CAST(t.amount AS TEXT) ILIKE $${params.length} OR u.name ILIKE $${params.length} OR
+        u.email ILIKE $${params.length})`);
+    }
+
+    const sql = `SELECT t.*, u.name AS client_name, u.email AS client_email
+                 FROM transactions t JOIN users u ON t.user_id = u.id
+                 WHERE ${conditions.join(' AND ')}
+                 ORDER BY t.created_at DESC LIMIT 300`;
+    const r = await pool.query(sql, params);
+    res.json({ transfers: r.rows.map((t) => ({
+      id: t.id,
+      clientId: t.user_id,
+      clientName: t.client_name,
+      clientEmail: t.client_email,
+      reference: t.reference,
+      label: t.label,
+      amount: Number(t.amount),
+      status: t.status,
+      statusLabel: statusLabel(t.status),
+      externalAccountHolder: t.external_account_holder,
+      externalIban: t.external_iban,
+      externalBic: t.external_bic,
+      bankName: t.bank_name,
+      reason: t.reason,
+      actionRequired: t.action_required,
+      decisionHistory: t.decision_history,
+      createdAt: t.created_at?.toISOString?.() || t.created_at,
+    })) });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Erreur serveur lors de la récupération des virements' });
   }
-
-  const sql = `SELECT t.*, u.name AS client_name, u.email AS client_email
-               FROM transactions t JOIN users u ON t.user_id = u.id
-               WHERE ${conditions.join(' AND ')}
-               ORDER BY t.created_at DESC LIMIT 300`;
-  const r = await pool.query(sql, params);
-  res.json({ transfers: r.rows.map((t) => ({
-    id: t.id,
-    clientId: t.user_id,
-    clientName: t.client_name,
-    clientEmail: t.client_email,
-    reference: t.reference,
-    label: t.label,
-    amount: Number(t.amount),
-    status: t.status,
-    statusLabel: statusLabel(t.status),
-    externalAccountHolder: t.external_account_holder,
-    externalIban: t.external_iban,
-    externalBic: t.external_bic,
-    bankName: t.bank_name,
-    reason: t.reason,
-    actionRequired: t.action_required,
-    decisionHistory: t.decision_history,
-    createdAt: t.created_at?.toISOString?.() || t.created_at,
-  })) });
 }
 
 /** Action admin sur un virement bloqué : autoriser, suspendre, refuser, rembourser. */
@@ -72,6 +77,8 @@ export async function decideTransfer(req, res) {
     const tx = existing.rows[0];
     const before = tx.status;
 
+    // Actions irréversibles uniquement depuis un état non final (éviter décisions contradictoires).
+    const finalStates = ['executed', 'refused'];
     let newStatus;
     let note = `Décision admin: ${decision}`;
     switch (decision) {
@@ -91,6 +98,12 @@ export async function decideTransfer(req, res) {
         newStatus = 'executed';
         note = 'Vérification complétée, virement libéré';
         break;
+    }
+
+    // Ne pas re-décider un virement déjà dans un état final (ex: re-refuser un exécuté).
+    if (finalStates.includes(before) && before !== newStatus) {
+      await cli.query('ROLLBACK');
+      return res.status(400).json({ error: 'Ce virement est déjà dans un état final, aucune décision possible' });
     }
 
     // Si refusé ou suspendu après débit, pas de remboursement automatique sauf demande explicite.
@@ -157,9 +170,16 @@ export async function refundTransfer(req, res) {
       return res.status(404).json({ error: 'Virement introuvable' });
     }
     const tx = existing.rows[0];
-    if (!['refused', 'suspended', 'verifying', 'failed'].includes(tx.status)) {
+
+    // Empêcher le double remboursement / la création de monnaie : seuls les états
+    // non-exécutés ET non-déjà-refusés peuvent être remboursés, une seule fois.
+    if (!['suspended', 'verifying', 'failed'].includes(tx.status)) {
       await cli.query('ROLLBACK');
-      return res.status(400).json({ error: 'Seul un virement non exécuté peut être remboursé' });
+      return res.status(400).json({ error: 'Seul un virement non exécuté et non remboursé peut être remboursé' });
+    }
+    if (Array.isArray(tx.decision_history) && tx.decision_history.some((h) => h.status === 'refused' && h.note === 'Virement remboursé au solde client')) {
+      await cli.query('ROLLBACK');
+      return res.status(400).json({ error: 'Ce virement a déjà été remboursé' });
     }
 
     // Créditer le solde
@@ -225,6 +245,10 @@ export async function listAdminUsers(req, res) {
 }
 
 export async function setAdminRole(req, res) {
+  // Défense en profondeur : seul un superadmin peut attribuer des rôles admin.
+  if (req.userRole !== 'superadmin') {
+    return res.status(403).json({ error: 'Accès refusé : seul un superadmin peut gérer les rôles' });
+  }
   const { id } = req.params;
   const { adminRole } = req.body;
   if (!['superadmin', 'compliance', 'finance', 'support'].includes(adminRole)) {

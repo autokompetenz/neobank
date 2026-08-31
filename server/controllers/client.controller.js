@@ -1,6 +1,7 @@
 import { pool } from '../config/database.js';
 import { toAccount, toTransactionRow, toUserProfile } from '../utils/serialize.js';
 import { insertNotification } from '../utils/notify.js';
+import { secureCode } from '../utils/secure.js';
 
 const fmt = (n) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n || 0);
 
@@ -238,14 +239,9 @@ export async function requestAccountActivation(req, res) {
   }
 }
 
-// Générer un code aléatoire de 8 caractères
+// Générer un code aléatoire de 8 caractères (cryptographiquement sûr)
 function generateCode() {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  let code = '';
-  for (let i = 0; i < 8; i++) {
-    code += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return code;
+  return secureCode(8);
 }
 
 export async function generateWithdrawalCode(req, res) {
@@ -930,13 +926,9 @@ export async function generateAndSendCode(req, res) {
         codePrefix = 'CLIENT';
     }
     
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let codeExists;
     do {
-      let suffix = '';
-      for (let i = 0; i < 4; i++) {
-        suffix += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
+      const suffix = secureCode(4);
       code = codePrefix + suffix;
       
       codeExists = await cli.query(`SELECT id FROM withdrawal_codes WHERE code = $1`, [code]);

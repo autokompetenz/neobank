@@ -49,9 +49,8 @@ export function AuthProvider({ children }) {
         setUserProfile(null);
         return null;
       }
-      setToken(null);
-      setUser(null);
-      setUserProfile(null);
+      // Autre erreur (5xx, etc.) : erreur transitoire, on garde la session
+      // et on ne déconnecte pas le client.
       return null;
     }
   }, []);

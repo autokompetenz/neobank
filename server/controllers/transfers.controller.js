@@ -1,6 +1,7 @@
 import { pool } from '../config/database.js';
 import { insertNotification } from '../utils/notify.js';
 import { toTransactionRow } from '../utils/serialize.js';
+import { secureCode } from '../utils/secure.js';
 
 const fmt = (n) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n || 0);
 
@@ -168,7 +169,7 @@ export async function createTransfer(req, res) {
     });
 
     const status = evalResult.status; // executed | verifying | suspended
-    const reference = 'VIR' + Date.now().toString(36).toUpperCase() + Math.random().toString(36).slice(2, 5).toUpperCase();
+    const reference = 'VIR' + Date.now().toString(36).toUpperCase() + secureCode(3);
     const lbl = label?.trim() || `Virement vers ${accountHolder.trim()}`;
 
     // Débiter le compte (le montant part en séquestre, quel que soit le statut)
@@ -230,13 +231,22 @@ export async function confirmVerification(req, res) {
     }
     const tx = r.rows[0];
 
-    // Re-évaluer les règles : si une règle 'suspended' s'applique, garder suspendu
+    // Re-évaluer les règles avec les données utilisateur ACTUELLES (kyc_status et
+    // account_verified vivent sur users, pas sur transactions). Sans cette lecture,
+    // ces valeurs seraient undefined et la règle 'low_verification' se déclencherait
+    // systématiquement, bloquant tous les virements en 'suspended'.
+    const me = await cli.query(
+      `SELECT kyc_status, account_verified FROM users WHERE id = $1`,
+      [req.userId],
+    );
+    const up = me.rows[0] || { kyc_status: null, account_verified: false };
+
     const evalResult = await evaluateRules({
       userId: req.userId,
       amount: Number(tx.amount),
       iban: tx.external_iban,
-      kycStatus: tx.kyc_status,
-      accountVerified: tx.account_verified,
+      kycStatus: up.kyc_status,
+      accountVerified: up.account_verified,
     });
 
     const finalStatus = evalResult.status === 'suspended' ? 'suspended' : 'executed';
