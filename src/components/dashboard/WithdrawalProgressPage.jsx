@@ -40,8 +40,8 @@ export default function WithdrawalProgressPage({ account, onRefresh }) {
           50% { opacity: 0.8; }
         }
         @keyframes wp-progress-glow {
-          0%, 100% { box-shadow: 0 0 20px rgba(147, 51, 234, 0.5); }
-          50% { box-shadow: 0 0 30px rgba(236, 72, 153, 0.8); }
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.75; }
         }
         @keyframes wp-float {
           0%, 100% { transform: translateY(0px); }
@@ -52,7 +52,7 @@ export default function WithdrawalProgressPage({ account, onRefresh }) {
         .wp-animate-bounce-slow { animation: wp-bounce-slow 2s infinite; }
         .wp-animate-shimmer { animation: wp-shimmer 2s infinite; }
         .wp-animate-pulse-slow { animation: wp-pulse-slow 3s infinite; }
-        .wp-animate-progress-glow { animation: wp-progress-glow 2s ease-in-out infinite; }
+        .wp-animate-progress-glow { box-shadow: 0 0 20px rgba(147, 51, 234, 0.5); animation: wp-progress-glow 2s ease-in-out infinite; }
         .wp-animate-float { animation: wp-float 3s ease-in-out infinite; }
       `;
       document.head.appendChild(style);
