@@ -36,6 +36,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "db:schema": "node server/scripts/apply-schema.js",
-    "db:seed": "node server/scripts/seed.js"
+    "db:seed": "node server/scripts/seed.js",
+    "db:fix": "node server/scripts/fix-iban-schema.js"
   }
 }

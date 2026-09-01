@@ -12,7 +12,7 @@ CREATE TABLE users (
   iban TEXT,
   bic TEXT,
   iban_proof TEXT,
-  iban_status TEXT NOT NULL DEFAULT 'none' CHECK (iban_status IN ('none','requested','assigned','active')),
+  iban_status TEXT NOT NULL DEFAULT 'none' CHECK (iban_status IN ('none','requested','pending_proof','assigned','active')),
   card_status TEXT NOT NULL DEFAULT 'none' CHECK (card_status IN ('none','requested','active','blocked')),
   role TEXT NOT NULL DEFAULT 'client' CHECK (role IN ('client','admin')),
   account_verified BOOLEAN NOT NULL DEFAULT false,
@@ -68,7 +68,8 @@ CREATE TABLE iban_requests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_iban_req_user ON iban_requests(user_id);
@@ -94,9 +95,9 @@ CREATE INDEX idx_notifications_user ON notifications(user_id, created_at DESC);
 CREATE TABLE account_activation_requests (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  amount NUMERIC(14,2) NOT NULL CHECK (amount > 0),
+  amount NUMERIC(14,2) NOT NULL CHECK (amount >= 0),
   proof_url TEXT, -- Augmenté pour supporter les images base64
-  step TEXT NOT NULL DEFAULT 'iban_request' CHECK (step IN ('iban_request', 'transfer_proof')),
+  step TEXT NOT NULL DEFAULT 'iban_request' CHECK (step IN ('iban_request', 'iban_proof', 'transfer_proof')),
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected')),
   reject_reason TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -338,4 +339,32 @@ BEGIN
         ALTER TABLE users ADD COLUMN admin_role TEXT DEFAULT 'superadmin'
             CHECK (admin_role IN ('superadmin','compliance','finance','support'));
     END IF;
+END $$;
+
+-- 6) Flux IBAN : autoriser 'pending_proof', updated_at sur iban_requests,
+--    et step 'iban_proof' + amount 0 sur account_activation_requests
+DO $$
+BEGIN
+    ALTER TABLE users DROP CONSTRAINT IF EXISTS users_iban_status_check
+        , ADD CONSTRAINT users_iban_status_check
+          CHECK (iban_status IN ('none','requested','pending_proof','assigned','active'));
+EXCEPTION WHEN OTHERS THEN NULL;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='iban_requests' AND column_name='updated_at') THEN
+        ALTER TABLE iban_requests ADD COLUMN updated_at TIMESTAMPTZ NOT NULL DEFAULT now();
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    ALTER TABLE account_activation_requests DROP CONSTRAINT IF EXISTS account_activation_requests_step_check
+        , ADD CONSTRAINT account_activation_requests_step_check
+          CHECK (step IN ('iban_request','iban_proof','transfer_proof'));
+    ALTER TABLE account_activation_requests DROP CONSTRAINT IF EXISTS account_activation_requests_amount_check
+        , ADD CONSTRAINT account_activation_requests_amount_check
+          CHECK (amount >= 0);
+EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
