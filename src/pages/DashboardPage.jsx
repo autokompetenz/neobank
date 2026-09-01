@@ -382,7 +382,7 @@ export default function DashboardPage() {
             <Menu size={18} />
           </button>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ fontSize: 15, fontWeight: 700, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pageTitles[activePage] || 'Prestiter Banca'}</p>
+            <p style={{ fontSize: 15, fontWeight: 700, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pageTitles[activePage] || 'NEOBANK'}</p>
             <p style={{ fontSize: 10, color: 'var(--text-3)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userProfile?.email || 'Espace client'}</p>
           </div>
           {userProfile && (

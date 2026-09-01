@@ -105,7 +105,7 @@ export default function AuthPage({ initialMode }) {
           <div className="auth-logo">
             <Shield size={28} />
           </div>
-          <h1>Prestiter Banca</h1>
+          <h1>NEOBANK</h1>
           <p className="subtitle">
             {mode === 'login' ? 'Accédez à votre espace' : 'Créez votre compte'}
           </p>

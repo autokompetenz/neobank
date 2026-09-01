@@ -59,7 +59,7 @@ export default function Sidebar({ activePage, onNavigate, sidebarOpen, setSideba
         {expanded && (
           <>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="sidebar-logo-title">Prestiter Banca</div>
+              <div className="sidebar-logo-title">NEOBANK</div>
               <div className="sidebar-logo-version">v2.0</div>
             </div>
             {isMobile ? (

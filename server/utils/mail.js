@@ -11,7 +11,7 @@ const transporter = nodemailer.createTransport({
 });
 
 const FROM = process.env.SMTP_FROM || process.env.SMTP_USER || 'noreply@prestiter.it';
-const SITE_NAME = 'Prestiter';
+const SITE_NAME = 'NEOBANK';
 const SITE_URL = process.env.SITE_URL || 'https://prestiter.it';
 
 function baseLayout(title, content) {

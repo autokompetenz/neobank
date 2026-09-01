@@ -144,7 +144,7 @@ export default function AdminPage() {
       {/* Sidebar */}
       <aside className="hidden md:flex flex-col w-64 bg-[var(--bg-card)] border-r border-[var(--border)]">
         <div className="p-4 border-b border-[var(--border)]">
-          <h2 className="font-semibold text-[var(--text)]">Prestiter Admin</h2>
+          <h2 className="font-semibold text-[var(--text)]">NEOBANK Admin</h2>
         </div>
         <nav className="flex-1 p-2 space-y-1">
           {TABS.map((t) => {
@@ -182,7 +182,7 @@ export default function AdminPage() {
           <div className="fixed inset-0 bg-black/50" onClick={() => setSidebar(false)} />
           <aside className="relative flex flex-col w-64 bg-[var(--bg-card)]">
             <div className="p-4 border-b border-[var(--border)] flex items-center justify-between">
-              <h2 className="font-semibold text-[var(--text)]">Prestiter Admin</h2>
+              <h2 className="font-semibold text-[var(--text)]">NEOBANK Admin</h2>
               <button onClick={() => setSidebar(false)} className="text-[var(--text-3)]">
                 <X className="w-5 h-5" />
               </button>
@@ -225,7 +225,7 @@ export default function AdminPage() {
           <button type="button" onClick={() => setSidebar(true)} className="text-[var(--text-2)] p-1">
             <Menu className="w-4.5 h-4.5 sm:w-5 sm:h-5" />
           </button>
-          <span className="font-semibold text-[13px] sm:text-[14px]">Prestiter Admin</span>
+          <span className="font-semibold text-[13px] sm:text-[14px]">NEOBANK Admin</span>
         </header>
         <main className="flex-1 p-3 sm:p-4 md:p-6 overflow-y-auto">
           {loading && !data ? (

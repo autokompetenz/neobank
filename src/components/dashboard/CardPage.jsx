@@ -58,7 +58,7 @@ export default function CardPage({ card, onRefresh }) {
               <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -translate-y-10 translate-x-10" />
               <div className="absolute bottom-0 left-10 w-16 h-16 bg-white/5 rounded-full translate-y-8" />
               <div className="flex justify-between items-start mb-6">
-                <p className="text-[11px] opacity-80 font-medium">Prestiter Banca</p>
+                <p className="text-[11px] opacity-80 font-medium">NEOBANK</p>
                 <div className="bg-white/20 px-2 py-1 rounded-full text-[10px]">
                   {card.status === 'active' ? 'Active' : card.status === 'blocked' ? 'Bloquée' : 'En attente'}
                 </div>
