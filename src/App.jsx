@@ -4,7 +4,6 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import AuthPage from './pages/AuthPage';
 import DashboardPage from './pages/DashboardPage';
 import AdminPage from './pages/AdminPage';
-import WithdrawalPage from './pages/WithdrawalPage';
 
 function PrivateRoute({ children }) {
   const { user } = useAuth();
@@ -31,7 +30,6 @@ function AppRoutes() {
       <Route path="/login" element={<PublicRoute><AuthPage /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><AuthPage initialMode="register" /></PublicRoute>} />
       <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
-      <Route path="/withdrawals" element={<PrivateRoute><WithdrawalPage /></PrivateRoute>} />
       <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

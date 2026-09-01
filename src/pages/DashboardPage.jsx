@@ -14,8 +14,6 @@ import TransfersPage from '../components/dashboard/TransfersPage.jsx';
 import BeneficiariesPage from '../components/dashboard/BeneficiariesPage.jsx';
 import ProfilePage from '../components/dashboard/ProfilePage.jsx';
 import NotificationsPanel from '../components/dashboard/NotificationsPanel';
-import WithdrawalProgressPage from '../components/dashboard/WithdrawalProgressPage';
-import WithdrawalRequestsPage from '../components/dashboard/WithdrawalRequestsPage';
 import { Clock, Menu, Ban, LogOut } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { DashboardSkeleton } from '../components/shared/Skeleton';
@@ -242,22 +240,15 @@ export default function DashboardPage() {
     const handleAccountVerified = () => loadDashboard();
     const handleIbanAssigned = () => loadDashboard();
     const handleStatusChanged = () => loadDashboard();
-    const handleWithdrawalStepCompleted = () => {
-      if (activePage === 'withdrawal-progress' || activePage === 'transfer') {
-        loadDashboard();
-      }
-    };
 
     window.addEventListener('accountVerified', handleAccountVerified);
     window.addEventListener('ibanAssigned', handleIbanAssigned);
     window.addEventListener('statusChanged', handleStatusChanged);
-    window.addEventListener('withdrawalStepCompleted', handleWithdrawalStepCompleted);
 
     return () => {
       window.removeEventListener('accountVerified', handleAccountVerified);
       window.removeEventListener('ibanAssigned', handleIbanAssigned);
       window.removeEventListener('statusChanged', handleStatusChanged);
-      window.removeEventListener('withdrawalStepCompleted', handleWithdrawalStepCompleted);
     };
   }, [activePage, loadDashboard]);
 
@@ -295,10 +286,6 @@ export default function DashboardPage() {
         return <TransfersPage account={account} onSuccess={loadDashboard} />;
       case 'beneficiaries':
         return <BeneficiariesPage />;
-      case 'withdrawal-requests':
-        return <WithdrawalRequestsPage account={account} onRefresh={loadDashboard} />;
-      case 'withdrawal-progress':
-        return <WithdrawalProgressPage account={account} onRefresh={loadDashboard} />;
       case 'profile':
         return <ProfilePage onSaved={loadDashboard} />;
       case 'notifications':
@@ -325,8 +312,6 @@ export default function DashboardPage() {
     profile: 'Mon profil',
     notifications: 'Notifications',
     activation: 'Activation IBAN',
-    'withdrawal-requests': 'Demandes de retrait',
-    'withdrawal-progress': 'Progression virements',
   };
 
   return (

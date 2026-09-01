@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import {
   LayoutDashboard, Activity, CreditCard, ArrowLeftRight,
   Globe, User, Bell, LogOut, Shield, ChevronLeft, ChevronRight,
-  Building2, Wallet, Zap, Key, FileText, Upload, Users
+  Building2, Wallet, Users
 } from 'lucide-react';
 
 const navItems = [
@@ -14,8 +14,6 @@ const navItems = [
   { id: 'card', label: 'Ma carte', icon: CreditCard },
   { id: 'transfer', label: 'Virements', icon: ArrowLeftRight },
   { id: 'beneficiaries', label: 'Bénéficiaires', icon: Users },
-  { id: 'withdrawal-requests', label: 'Demandes Retrait', icon: FileText },
-  { id: 'withdrawal-progress', label: 'Progression Virements', icon: Key },
   { section: 'Compte' },
   { id: 'account', label: 'Mon compte', icon: Wallet },
   { id: 'iban', label: 'IBAN / BIC', icon: Globe },
