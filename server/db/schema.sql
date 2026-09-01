@@ -33,6 +33,7 @@ CREATE TABLE transactions (
   external_iban TEXT,
   external_bic TEXT,
   external_account_holder TEXT,
+  fees NUMERIC(18,2) NOT NULL DEFAULT 0,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
@@ -254,6 +255,13 @@ DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='transactions' AND column_name='reference') THEN
         ALTER TABLE transactions ADD COLUMN reference TEXT;
+    END IF;
+END $$;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='transactions' AND column_name='fees') THEN
+        ALTER TABLE transactions ADD COLUMN fees NUMERIC(18,2) NOT NULL DEFAULT 0;
     END IF;
 END $$;
 

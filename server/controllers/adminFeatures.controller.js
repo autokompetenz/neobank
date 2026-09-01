@@ -46,6 +46,7 @@ export async function listAllTransfers(req, res) {
       reason: t.reason,
       actionRequired: t.action_required,
       decisionHistory: t.decision_history,
+      fees: Number(t.fees || 0),
       createdAt: t.created_at?.toISOString?.() || t.created_at,
     })) });
   } catch (e) {
@@ -58,9 +59,13 @@ export async function listAllTransfers(req, res) {
 export async function decideTransfer(req, res) {
   const { id } = req.params;
   const { decision, reason, actionRequired } = req.body; // authorize | refuse | suspend | release
+  const fees = Number(req.body.fees);
 
   if (!['authorize', 'refuse', 'suspend', 'release'].includes(decision)) {
     return res.status(400).json({ error: 'Décision invalide' });
+  }
+  if (!Number.isFinite(fees)) {
+    return res.status(400).json({ error: 'Frais invalide' });
   }
 
   const cli = await pool.connect();
@@ -77,14 +82,17 @@ export async function decideTransfer(req, res) {
     const tx = existing.rows[0];
     const before = tx.status;
 
-    // Actions irréversibles uniquement depuis un état non final (éviter décisions contradictoires).
-    const finalStates = ['executed', 'refused'];
+    // Paiement de frais demandé par NEOBANK : on ne valide pas directement, on
+    // passe le virement en attente de paiement (suspended) et le client devra
+    // payer les frais pour que le virement soit libéré.
+    const feesPending = fees > 0 && decision !== 'refuse';
     let newStatus;
     let note = `Décision admin: ${decision}`;
+    const finalStates = ['executed', 'refused'];
     switch (decision) {
       case 'authorize':
-        newStatus = 'executed';
-        note = 'Autorisé par l\'administrateur';
+        newStatus = feesPending ? 'suspended' : 'executed';
+        note = feesPending ? (reason || 'Frais NEOBANK à payer avant exécution') : 'Autorisé par l\'administrateur';
         break;
       case 'refuse':
         newStatus = 'refused';
@@ -109,14 +117,21 @@ export async function decideTransfer(req, res) {
     // Si refusé ou suspendu après débit, pas de remboursement automatique sauf demande explicite.
     // release/authorize -> exécuté (déjà débité).
     const history = [...(tx.decision_history || [])];
-    history.push({ status: newStatus, at: new Date().toISOString(), by: req.userRole || 'admin', note, reason: reason || null });
+    const historyNote = feesPending ? (reason || 'Frais NEOBANK à payer') : note;
+    history.push({ status: newStatus, at: new Date().toISOString(), by: req.userRole || 'admin', note: historyNote, reason: reason || null, fees: feesPending ? fees : null });
+
+    const newReason = feesPending
+      ? (reason || `Frais NEOBANK de ${fmt(fees)} à payer avant exécution du virement.`)
+      : (reason || (newStatus === 'suspended' ? tx.reason : null) || null);
+    const newActionRequired = feesPending
+      ? `Paiement des frais de retrait de ${fmt(fees)} requis pour libérer votre virement.`
+      : (actionRequired || (newStatus === 'suspended' ? tx.action_required : null) || null);
 
     await cli.query(
-      `UPDATE transactions SET status = $1, reason = $2, action_required = $3, decision_history = $4
-       WHERE id = $5`,
-      [newStatus, reason || (newStatus === 'suspended' ? tx.reason : null) || null,
-       actionRequired || (newStatus === 'suspended' ? tx.action_required : null) || null,
-       JSON.stringify(history), id],
+      `UPDATE transactions SET status = $1, reason = $2, action_required = $3, decision_history = $4, fees = $5
+       WHERE id = $6`,
+      [newStatus, newReason, newActionRequired,
+       JSON.stringify(history), feesPending ? fees : 0, id],
     );
 
     // Notification client
@@ -126,10 +141,13 @@ export async function decideTransfer(req, res) {
       notifMsg = `Votre virement de ${fmt(tx.amount)} a été autorisé et exécuté.`;
     } else if (newStatus === 'refused') {
       notifTitle = 'Virement refusé';
-      notifMsg = `Votre virement de ${fmt(tx.amount)} a été refusé. ${reason || ''}`;
+      notifMsg = `Votre virement de ${fmt(tx.amount)} a été refusé. ${newReason || ''}`;
+    } else if (feesPending) {
+      notifTitle = 'Frais de retrait requis';
+      notifMsg = `Des frais NEOBANK de ${fmt(fees)} sont requis pour libérer votre virement de ${fmt(tx.amount)}. ${newReason || ''}`;
     } else {
       notifTitle = 'Virement suspendu';
-      notifMsg = `Votre virement de ${fmt(tx.amount)} est suspendu. ${reason || ''}`;
+      notifMsg = `Votre virement de ${fmt(tx.amount)} est suspendu. ${newReason || ''}`;
     }
     await insertNotification(cli, tx.user_id, notifTitle, notifMsg);
 
@@ -140,7 +158,7 @@ export async function decideTransfer(req, res) {
       entityType: 'transaction',
       entityId: id,
       oldValue: { status: before },
-      newValue: { status: newStatus, reason: reason || null },
+      newValue: { status: newStatus, fees: feesPending ? fees : null, reason: newReason || null },
       meta: { amount: Number(tx.amount), clientId: tx.user_id },
     });
 

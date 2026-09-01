@@ -491,28 +491,34 @@ const STATUS_STYLES_ADMIN = {
 
 function RowDecision({ status, deciding, onDecide }) {
   const [msg, setMsg] = useState('');
+  const [fees, setFees] = useState('');
 
   return (
     <div className="flex flex-col gap-1.5 min-w-[240px]">
       <div className="flex gap-1">
-        <button onClick={() => onDecide('authorize', msg)} disabled={deciding}
+        <button onClick={() => onDecide('authorize', msg, fees)} disabled={deciding}
           className="text-[10.5px] px-2 py-1 rounded-lg bg-green-50 text-green-700 font-medium hover:bg-green-100 transition disabled:opacity-50">
-          Autoriser
+          Autoriser / Libérer
         </button>
-        <button onClick={() => onDecide('suspend', msg)} disabled={deciding || status !== 'verifying'}
-          className="text-[10.5px] px-2 py-1 rounded-lg bg-amber-50 text-amber-700 font-medium hover:bg-amber-100 transition disabled:opacity-50">
-          Suspendre
-        </button>
-        <button onClick={() => onDecide('refuse', msg)} disabled={deciding}
+        <button onClick={() => onDecide('refuse', msg, fees)} disabled={deciding}
           className="text-[10.5px] px-2 py-1 rounded-lg bg-red-50 text-red-600 font-medium hover:bg-red-100 transition disabled:opacity-50">
           Refuser
         </button>
       </div>
       <input
+        type="number"
+        min="0"
+        step="0.01"
+        value={fees}
+        onChange={(e) => setFees(e.target.value)}
+        placeholder="Frais de retrait NEOBANK (€)..."
+        className="input-base text-[11px] py-1.5 min-h-[34px]"
+      />
+      <input
         type="text"
         value={msg}
         onChange={(e) => setMsg(e.target.value)}
-        placeholder="Message au client (ex : frais à payer de 25 € avant exécution)..."
+        placeholder="Message au client..."
         className="input-base text-[11px] py-1.5 min-h-[34px]"
       />
     </div>
@@ -524,11 +530,11 @@ function TabTransfers({ allTransfers, loadTransfers }) {
   const [statusFilter, setStatusFilter] = useState('');
   const [deciding, setDeciding] = useState(null);
 
-  const decide = async (id, decision, reason = '') => {
+  const decide = async (id, decision, reason = '', fees = '') => {
     setDeciding(id);
     try {
-      await api.post(`/admin/transfers/${id}/decide`, { decision, reason });
-      toast.success(`Virement ${decision === 'authorize' ? 'autorisé' : decision === 'refuse' ? 'refusé' : decision === 'suspend' ? 'suspendu' : 'libéré'}`);
+      await api.post(`/admin/transfers/${id}/decide`, { decision, reason, fees: Number(fees) || 0 });
+      toast.success(Number(fees) > 0 ? 'Frais de retrait NEOBANK enregistrés. Le virement reste en attente du paiement client.' : `Virement ${decision === 'authorize' ? 'autorisé' : 'refusé'}`);
       await loadTransfers();
     } catch (e) {
       toast.error(e.response?.data?.error || 'Erreur');
@@ -597,7 +603,12 @@ function TabTransfers({ allTransfers, loadTransfers }) {
                   <td className="p-3 font-mono text-[11px]">{t.reference}</td>
                   <td className="p-3 text-[12px]">{t.externalAccountHolder}</td>
                   <td className="p-3"><Chip color={STATUS_STYLES_ADMIN[t.status]?.replace('badge-', '') || 'gray'}>{t.statusLabel}</Chip></td>
-                  <td className="p-3 text-[11px] text-[var(--text-2)] max-w-[180px] truncate">{t.reason || '—'}</td>
+                  <td className="p-3 text-[11px] text-[var(--text-2)] max-w-[180px] truncate">
+                    {t.reason || '—'}
+                    {Number(t.fees) > 0 && (
+                      <span className="block mt-1 font-mono font-semibold text-[var(--blue)]">Frais NEØBANK: {fmt(Number(t.fees))}</span>
+                    )}
+                  </td>
                   <td className="p-3 text-right font-mono font-medium">{fmt(t.amount)}</td>
                   <td className="p-3">
                     {(t.status === 'verifying' || t.status === 'suspended') && (

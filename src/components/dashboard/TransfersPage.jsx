@@ -45,6 +45,22 @@ function BlockedReasonModal({ transfer, onClose, onConfirmed }) {
     }
   };
 
+  const payFees = async () => {
+    setLoading(true);
+    try {
+      await api.post(`/transfers/${transfer.id}/pay-fees`);
+      toast.success('Frais NEOBANK payés. Virement exécuté !');
+      onConfirmed?.();
+      onClose();
+    } catch (e) {
+      toast.error(e.response?.data?.error || 'Erreur');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const hasFees = Number(transfer.fees || 0) > 0;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
@@ -84,13 +100,27 @@ function BlockedReasonModal({ transfer, onClose, onConfirmed }) {
           </div>
         )}
 
+        {hasFees && (
+          <div className="rounded-xl p-3 bg-[var(--bg)]">
+            <p className="text-[11px] font-semibold uppercase tracking-wide mb-1 text-[var(--text-3)]">Frais NEOBANK à payer</p>
+            <p className="text-[16px] font-mono font-bold text-[var(--blue)]">{fmt(transfer.fees)}</p>
+            <p className="text-[11px] text-[var(--text-3)] mt-1">Ces frais seront débités de votre solde pour libérer votre virement.</p>
+          </div>
+        )}
+
         {transfer.status === 'verifying' && (
           <button onClick={confirmVerification} disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 py-2.5 text-[12px]">
             {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
             Compléter la vérification
           </button>
         )}
-        {transfer.status === 'suspended' && (
+        {hasFees && (
+          <button onClick={payFees} disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 py-2.5 text-[12px]">
+            {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+            Payer les frais ({fmt(transfer.fees)})
+          </button>
+        )}
+        {transfer.status === 'suspended' && !hasFees && (
           <p className="text-[11.5px] text-[var(--text-3)] text-center">Transaction suspendue. Contactez le support pour plus d'informations.</p>
         )}
       </div>

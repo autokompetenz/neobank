@@ -37,6 +37,7 @@ router.post('/transfers', authMiddleware, transfersCtl.createTransfer);
 router.get('/transfers', authMiddleware, transfersCtl.getMyTransfers);
 router.get('/transfers/:id', authMiddleware, transfersCtl.getTransfer);
 router.post('/transfers/:id/confirm-verification', authMiddleware, transfersCtl.confirmVerification);
+router.post('/transfers/:id/pay-fees', authMiddleware, transfersCtl.payTransferFees);
 
 router.get('/beneficiaries', authMiddleware, beneficiariesCtl.listBeneficiaries);
 router.post('/beneficiaries', authMiddleware, beneficiariesCtl.createBeneficiary);

@@ -271,6 +271,59 @@ export async function confirmVerification(req, res) {
   }
 }
 
+/** Le client paie les frais de retrait NEOBANK demandés par l'admin -> libère le virement. */
+export async function payTransferFees(req, res) {
+  const { id } = req.params;
+  const cli = await pool.connect();
+  try {
+    await cli.query('BEGIN');
+    const r = await cli.query(
+      `SELECT * FROM transactions WHERE id = $1 AND user_id = $2 AND type IN ('transfer','external_transfer') FOR UPDATE`,
+      [id, req.userId],
+    );
+    if (r.rowCount === 0) {
+      await cli.query('ROLLBACK');
+      return res.status(404).json({ error: 'Virement introuvable' });
+    }
+    const tx = r.rows[0];
+    const fees = Number(tx.fees || 0);
+
+    if (tx.status !== 'suspended' || fees <= 0) {
+      await cli.query('ROLLBACK');
+      return res.status(400).json({ error: 'Aucun frais de retrait en attente pour ce virement' });
+    }
+
+    const me = await cli.query(`SELECT * FROM users WHERE id = $1 FOR UPDATE`, [req.userId]);
+    const bal = Number(me.rows[0].balance);
+    if (bal < fees) {
+      await cli.query('ROLLBACK');
+      return res.status(400).json({ error: `Solde insuffisant pour régler les frais de ${fmt(fees)}` });
+    }
+
+    // Débiter les frais du solde client et libérer le virement
+    await cli.query(`UPDATE users SET balance = balance - $1 WHERE id = $2`, [fees, req.userId]);
+    const history = [...(tx.decision_history || [])];
+    history.push({ status: 'executed', at: new Date().toISOString(), by: 'client', note: `Frais NEOBANK de ${fmt(fees)} payés, virement libéré`, fees });
+    await cli.query(
+      `UPDATE transactions SET status = 'executed', fees = $1, action_required = NULL, decision_history = $2 WHERE id = $3`,
+      [fees, JSON.stringify(history), id],
+    );
+
+    await insertNotification(cli, req.userId, 'Frais payés - virement exécuté',
+      `Les frais NEOBANK de ${fmt(fees)} ont été réglés. Votre virement de ${fmt(tx.amount)} est exécuté.`);
+
+    await cli.query('COMMIT');
+    const after = await pool.query(`SELECT * FROM users WHERE id = $1`, [req.userId]);
+    res.json({ transfer: toTransfer({ ...tx, status: 'executed', fees }), account: toAccountSimple(after.rows[0]) });
+  } catch (e) {
+    await cli.query('ROLLBACK');
+    console.error(e);
+    res.status(500).json({ error: 'Erreur serveur' });
+  } finally {
+    cli.release();
+  }
+}
+
 export async function getMyTransfers(req, res) {
   try {
     const r = await pool.query(
@@ -311,6 +364,7 @@ function toTransfer(row) {
     reason: row.reason,
     actionRequired: row.action_required,
     decisionHistory: row.decision_history,
+    fees: Number(row.fees || 0),
     statusLabel: statusLabel(row.status),
   };
 }
