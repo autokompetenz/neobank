@@ -235,6 +235,11 @@ export default function TransfersPage({ account, onSuccess }) {
                     <span className={`text-[10.5px] px-2 py-0.5 rounded-full font-medium ${STATUS_STYLES[t.status] || 'badge-amber'}`}>
                       {STATUS_LABELS[t.status] || t.status}
                     </span>
+                    {Number(t.fees) > 0 && t.status === 'suspended' && (
+                      <span className="text-[10.5px] px-2 py-0.5 rounded-full font-semibold text-[var(--blue)] bg-[var(--blue-bg)]">
+                        Frais à payer : {fmt(Number(t.fees))}
+                      </span>
+                    )}
                     {(t.status === 'suspended' || t.status === 'verifying') && (
                       <span className="text-[10.5px] text-[var(--blue)] font-medium flex items-center gap-0.5">
                         <ShieldAlert className="w-3 h-3" /> Pourquoi suspendu ?

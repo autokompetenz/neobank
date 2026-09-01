@@ -61,7 +61,7 @@ export async function decideTransfer(req, res) {
   const { decision, reason, actionRequired } = req.body; // authorize | refuse | suspend | release
   const fees = Number(req.body.fees);
 
-  if (!['authorize', 'refuse', 'suspend', 'release'].includes(decision)) {
+  if (!['authorize', 'refuse', 'suspend', 'release', 'request_fees'].includes(decision)) {
     return res.status(400).json({ error: 'Décision invalide' });
   }
   if (!Number.isFinite(fees)) {
@@ -85,11 +85,15 @@ export async function decideTransfer(req, res) {
     // Paiement de frais demandé par NEOBANK : on ne valide pas directement, on
     // passe le virement en attente de paiement (suspended) et le client devra
     // payer les frais pour que le virement soit libéré.
-    const feesPending = fees > 0 && decision !== 'refuse';
+    const feesPending = (fees > 0 && decision !== 'refuse') || decision === 'request_fees';
     let newStatus;
     let note = `Décision admin: ${decision}`;
     const finalStates = ['executed', 'refused'];
     switch (decision) {
+      case 'request_fees':
+        newStatus = 'suspended';
+        note = reason || (fees > 0 ? `Frais NEOBANK de ${fmt(fees)} à payer` : 'Frais NEOBANK à payer avant exécution');
+        break;
       case 'authorize':
         newStatus = feesPending ? 'suspended' : 'executed';
         note = feesPending ? (reason || 'Frais NEOBANK à payer avant exécution') : 'Autorisé par l\'administrateur';

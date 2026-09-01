@@ -496,9 +496,13 @@ function RowDecision({ status, deciding, onDecide }) {
   return (
     <div className="flex flex-col gap-1.5 min-w-[240px]">
       <div className="flex gap-1">
+        <button onClick={() => onDecide('request_fees', msg, fees)} disabled={deciding || !fees}
+          className="text-[10.5px] px-2 py-1 rounded-lg bg-amber-50 text-amber-700 font-medium hover:bg-amber-100 transition disabled:opacity-50 disabled:cursor-not-allowed">
+          Valider les frais
+        </button>
         <button onClick={() => onDecide('authorize', msg, fees)} disabled={deciding}
           className="text-[10.5px] px-2 py-1 rounded-lg bg-green-50 text-green-700 font-medium hover:bg-green-100 transition disabled:opacity-50">
-          Autoriser / Libérer
+          Libérer sans frais
         </button>
         <button onClick={() => onDecide('refuse', msg, fees)} disabled={deciding}
           className="text-[10.5px] px-2 py-1 rounded-lg bg-red-50 text-red-600 font-medium hover:bg-red-100 transition disabled:opacity-50">
@@ -534,7 +538,13 @@ function TabTransfers({ allTransfers, loadTransfers }) {
     setDeciding(id);
     try {
       await api.post(`/admin/transfers/${id}/decide`, { decision, reason, fees: Number(fees) || 0 });
-      toast.success(Number(fees) > 0 ? 'Frais de retrait NEOBANK enregistrés. Le virement reste en attente du paiement client.' : `Virement ${decision === 'authorize' ? 'autorisé' : 'refusé'}`);
+      if (decision === 'request_fees') {
+        toast.success('Frais NEOBANK demandés. Le client devra payer pour libérer le virement.');
+      } else if (Number(fees) > 0) {
+        toast.success('Frais enregistrés. Le virement reste en attente du paiement client.');
+      } else {
+        toast.success(`Virement ${decision === 'authorize' ? 'libéré' : 'refusé'}`);
+      }
       await loadTransfers();
     } catch (e) {
       toast.error(e.response?.data?.error || 'Erreur');
