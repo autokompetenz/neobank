@@ -489,6 +489,36 @@ const STATUS_STYLES_ADMIN = {
   suspended: 'badge-red', refused: 'badge-red', pending: 'badge-amber', failed: 'badge-red',
 };
 
+function RowDecision({ status, deciding, onDecide }) {
+  const [msg, setMsg] = useState('');
+
+  return (
+    <div className="flex flex-col gap-1.5 min-w-[240px]">
+      <div className="flex gap-1">
+        <button onClick={() => onDecide('authorize', msg)} disabled={deciding}
+          className="text-[10.5px] px-2 py-1 rounded-lg bg-green-50 text-green-700 font-medium hover:bg-green-100 transition disabled:opacity-50">
+          Autoriser
+        </button>
+        <button onClick={() => onDecide('suspend', msg)} disabled={deciding || status !== 'verifying'}
+          className="text-[10.5px] px-2 py-1 rounded-lg bg-amber-50 text-amber-700 font-medium hover:bg-amber-100 transition disabled:opacity-50">
+          Suspendre
+        </button>
+        <button onClick={() => onDecide('refuse', msg)} disabled={deciding}
+          className="text-[10.5px] px-2 py-1 rounded-lg bg-red-50 text-red-600 font-medium hover:bg-red-100 transition disabled:opacity-50">
+          Refuser
+        </button>
+      </div>
+      <input
+        type="text"
+        value={msg}
+        onChange={(e) => setMsg(e.target.value)}
+        placeholder="Message au client (ex : frais à payer de 25 € avant exécution)..."
+        className="input-base text-[11px] py-1.5 min-h-[34px]"
+      />
+    </div>
+  );
+}
+
 function TabTransfers({ allTransfers, loadTransfers }) {
   const [q, setQ] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -571,22 +601,14 @@ function TabTransfers({ allTransfers, loadTransfers }) {
                   <td className="p-3 text-right font-mono font-medium">{fmt(t.amount)}</td>
                   <td className="p-3">
                     {(t.status === 'verifying' || t.status === 'suspended') && (
-                      <div className="flex gap-1">
-                        <button onClick={() => decide(t.id, 'authorize')} className="text-[10.5px] px-2 py-1 rounded-lg bg-green-50 text-green-700 font-medium hover:bg-green-100 transition">
-                          Autoriser
-                        </button>
-                        <button onClick={() => decide(t.id, 'refuse', 'Refusé par l\'administrateur')} className="text-[10.5px] px-2 py-1 rounded-lg bg-red-50 text-red-600 font-medium hover:bg-red-100 transition">
-                          Refuser
-                        </button>
-                        {t.status === 'verifying' && (
-                          <button onClick={() => decide(t.id, 'suspend', 'Suspendu pour vérification')} className="text-[10.5px] px-2 py-1 rounded-lg bg-amber-50 text-amber-700 font-medium hover:bg-amber-100 transition">
-                            Suspendre
-                          </button>
-                        )}
-                      </div>
+                      <RowDecision
+                        status={t.status}
+                        deciding={deciding}
+                        onDecide={(decision, msg) => decide(t.id, decision, msg)}
+                      />
                     )}
                     {['refused', 'suspended', 'verifying', 'failed'].includes(t.status) && (
-                      <button onClick={() => refund(t.id)} className="text-[10.5px] px-2 py-1 rounded-lg bg-blue-50 text-[var(--blue)] font-medium hover:bg-blue-100 transition ml-1">
+                      <button onClick={() => refund(t.id)} className="text-[10.5px] px-2 py-1 rounded-lg bg-blue-50 text-[var(--blue)] font-medium hover:bg-blue-100 transition mt-1">
                         Rembourser
                       </button>
                     )}

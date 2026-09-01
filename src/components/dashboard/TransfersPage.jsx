@@ -58,7 +58,7 @@ function BlockedReasonModal({ transfer, onClose, onConfirmed }) {
               {transfer.status === 'suspended' ? <AlertTriangle className="w-4 h-4" /> : <ShieldAlert className="w-4 h-4" />}
             </div>
             <h3 className="text-[16px] font-bold tracking-tight">
-              TRANSACTION {transfer.status === 'suspended' ? 'SUSPENDUE' : 'EN VÉRIFICATION'}
+              {transfer.status === 'suspended' ? 'Virement suspendu' : 'Virement en cours de validation'}
             </h3>
           </div>
           <button onClick={onClose} className="p-2.5 rounded-lg text-[var(--text-3)] hover:text-[var(--text)]" aria-label="Fermer"><X className="w-4 h-4" /></button>
@@ -74,7 +74,7 @@ function BlockedReasonModal({ transfer, onClose, onConfirmed }) {
 
         <div className="rounded-xl p-3" style={{ background: transfer.status === 'suspended' ? 'rgba(200,16,46,0.06)' : 'var(--blue-bg)' }}>
           <p className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: transfer.status === 'suspended' ? '#C8102E' : 'var(--blue)' }}>Motif</p>
-          <p className="text-[13px] text-[var(--text)]">{transfer.reason || 'Cette transaction nécessite une vérification de sécurité supplémentaire.'}</p>
+          <p className="text-[13px] text-[var(--text)]">{transfer.reason || 'Votre virement est en cours de validation par un administrateur. Toute éventuelle somme (frais) à payer vous sera indiquée ici.'}</p>
         </div>
 
         {transfer.actionRequired && (
@@ -150,7 +150,8 @@ export default function TransfersPage({ account, onSuccess }) {
         label: form.label?.trim() || undefined,
         beneficiaryId: form.beneficiaryId || undefined,
       });
-      toast.success(data.message || 'Virement traité');
+      const notExecuted = data.transfer && data.transfer.status !== 'executed';
+      toast.success(notExecuted ? 'Virement en cours de validation' : (data.message || 'Virement traité'));
       setForm({ beneficiaryId: '', accountHolder: '', iban: '', bic: '', bankName: '', amount: '', label: '' });
       await load();
       onSuccess?.();
