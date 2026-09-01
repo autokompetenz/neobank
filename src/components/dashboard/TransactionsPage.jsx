@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import toast from 'react-hot-toast';
 import { api } from '../../services/api';
-import { Search, TrendingUp, TrendingDown, ArrowLeftRight, Minus, Receipt } from 'lucide-react';
+import { Search, TrendingUp, TrendingDown, ArrowLeftRight, Receipt } from 'lucide-react';
 
 const fmt = (n) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n || 0);
 
@@ -16,8 +15,6 @@ function formatTxDate(createdAt) {
 export default function TransactionsPage({ transactions, onRefresh }) {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
-  const [witAmt, setWitAmt] = useState('');
-  const [loading, setLoading] = useState(false);
 
   const safeTransactions = Array.isArray(transactions) ? transactions : [];
 
@@ -30,45 +27,12 @@ export default function TransactionsPage({ transactions, onRefresh }) {
   const totalIn = safeTransactions.filter((t) => t.type === 'deposit').reduce((s, t) => s + t.amount, 0);
   const totalOut = safeTransactions.filter((t) => t.type === 'withdrawal').reduce((s, t) => s + t.amount, 0);
 
-  const doWithdraw = async (e) => {
-    e.preventDefault();
-    const amount = parseFloat(witAmt);
-    if (!amount || amount <= 0) return toast.error('Montant invalide');
-    setLoading(true);
-    try {
-      await api.post('/withdraw', { amount, label: 'Retrait compte' });
-      toast.success('Retrait enregistré');
-      setWitAmt('');
-      onRefresh?.();
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Erreur');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="space-y-4 fade-in">
       <div>
         <h1 className="text-[19px] font-semibold tracking-tight">Transactions</h1>
         <p className="text-[12px] text-[var(--text-3)] mt-0.5">{safeTransactions.length} opération(s) au total</p>
       </div>
-
-      {onRefresh && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div></div>
-          <form onSubmit={doWithdraw} className="card p-4 flex gap-2 items-end">
-            <div className="flex-1">
-              <label className="label">Retrait (€)</label>
-              <input type="number" min="0.01" step="0.01" value={witAmt} onChange={(e) => setWitAmt(e.target.value)}
-                className="input-base mt-1" placeholder="0,00" />
-            </div>
-            <button type="submit" disabled={loading} className="btn-primary px-4 py-2 flex items-center gap-1">
-              <Minus className="w-4 h-4" /> Retirer
-            </button>
-          </form>
-        </div>
-      )}
 
       <div className="grid grid-cols-2 gap-3">
         <div className="card p-4 flex items-center gap-3">

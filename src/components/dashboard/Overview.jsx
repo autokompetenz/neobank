@@ -220,7 +220,6 @@ export default function Overview({ account, transactions, notifications, onNavig
             <p className="text-[13px] font-semibold text-[var(--text)] mb-2.5">Actions rapides</p>
             <div className="grid grid-cols-2 gap-2">
               {[
-                { label: 'Retrait', page: 'transactions' },
                 { label: 'Virement', page: 'transfer' },
                 ...(account?.iban && account?.status === 'active' && account?.accountVerified ? [] : [{ label: 'Activation', page: 'activation' }]),
                 { label: 'Support', page: 'profile' },
