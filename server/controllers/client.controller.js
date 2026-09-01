@@ -499,11 +499,6 @@ export async function createWithdrawalRequest(req, res) {
     return res.status(400).json({ error: 'Informations du bénéficiaire et montant requis' });
   }
   
-  const cleanIban = iban.replace(/\s/g, '').toUpperCase();
-  if (!/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(cleanIban)) {
-    return res.status(400).json({ error: 'Format IBAN invalide' });
-  }
-  
   const cli = await pool.connect();
   try {
     await cli.query('BEGIN');
