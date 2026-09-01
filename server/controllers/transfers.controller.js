@@ -5,8 +5,6 @@ import { secureCode } from '../utils/secure.js';
 
 const fmt = (n) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n || 0);
 
-const EUR_RE = /^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/;
-
 function assertCanOperate(row) {
   return (
     row.account_verified &&
@@ -128,9 +126,6 @@ export async function createTransfer(req, res) {
     return res.status(400).json({ error: 'Informations du bénéficiaire et montant requis' });
   }
   const cleanIban = iban.replace(/\s/g, '').toUpperCase();
-  if (!EUR_RE.test(cleanIban)) {
-    return res.status(400).json({ error: 'Format IBAN invalide' });
-  }
 
   const cli = await pool.connect();
   try {

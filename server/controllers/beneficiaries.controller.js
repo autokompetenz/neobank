@@ -1,8 +1,6 @@
 import { pool } from '../config/database.js';
 import { logAudit } from '../utils/audit.js';
 
-const EUR_RE = /^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/;
-
 function normalize(row) {
   return {
     id: row.id,
@@ -35,9 +33,6 @@ export async function createBeneficiary(req, res) {
     return res.status(400).json({ error: 'Nom, IBAN et BIC requis' });
   }
   const cleanIban = iban.replace(/\s/g, '').toUpperCase();
-  if (!EUR_RE.test(cleanIban)) {
-    return res.status(400).json({ error: 'Format IBAN invalide' });
-  }
   try {
     const r = await pool.query(
       `INSERT INTO beneficiaries (user_id, name, iban, bic, bank_name)
@@ -63,7 +58,6 @@ export async function updateBeneficiary(req, res) {
 
     const row = existing.rows[0];
     const cleanIban = (iban ?? row.iban).replace(/\s/g, '').toUpperCase();
-    if (!EUR_RE.test(cleanIban)) return res.status(400).json({ error: 'Format IBAN invalide' });
 
     const r = await pool.query(
       `UPDATE beneficiaries SET
