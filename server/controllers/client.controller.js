@@ -121,18 +121,22 @@ export async function requestAccountActivation(req, res) {
       }
 
       const existing = await cliIban.query(
-        `SELECT id FROM account_activation_requests WHERE user_id = $1 AND step = 'iban_proof' AND status = 'pending'`,
+        `SELECT id FROM account_activation_requests WHERE user_id = $1 AND step = 'iban_proof' AND status = 'pending' FOR UPDATE`,
         [req.userId]
       );
       if (existing.rowCount > 0) {
-        await cliIban.query('ROLLBACK');
-        return res.status(400).json({ error: 'Une demande de justificatif est déjà en cours' });
+        // La demande de justificatif a été pré-créée (ex: assignIban).
+        // On rattache la preuve du client à cette demande au lieu de rejeter.
+        await cliIban.query(
+          `UPDATE account_activation_requests SET proof_url = $2 WHERE id = $1`,
+          [existing.rows[0].id, processedProofUrl]
+        );
+      } else {
+        await cliIban.query(
+          `INSERT INTO account_activation_requests (user_id, amount, proof_url, step) VALUES ($1, 0, $2, 'iban_proof')`,
+          [req.userId, processedProofUrl]
+        );
       }
-
-      await cliIban.query(
-        `INSERT INTO account_activation_requests (user_id, amount, proof_url, step) VALUES ($1, 0, $2, 'iban_proof')`,
-        [req.userId, processedProofUrl]
-      );
 
       await insertNotification(
         cliIban,
