@@ -95,7 +95,7 @@ export default function IbanFlow({ account, onRefresh, onBack }) {
       return 'deposit';
     if (status === 'proof_required')
       return 'proof';
-    if (status === 'none' || status === 'requested')
+    if (status === 'none' || status === 'pending')
       return 'request';
     return 'unknown';
   };
@@ -237,7 +237,7 @@ export default function IbanFlow({ account, onRefresh, onBack }) {
   }
 
   if (step === 'request') {
-    const isPending = status === 'requested';
+    const isPending = status === 'pending';
     return (
       <div className="space-y-5 fade-in max-w-2xl">
         <div className="flex items-center gap-3">
