@@ -59,15 +59,15 @@ export default function NotificationsPanel({ notifications, onChanged }) {
                 <div className="flex-1 min-w-0">
                   <p className={`text-[12.5px] font-medium ${n.read ? 'text-slate-600' : 'text-slate-800'}`}>{n.title}</p>
                   <p className="text-[12px] text-slate-500 mt-0.5">{n.message}</p>
-                  <p className="text-[10.5px] text-slate-400 mt-1">{date}</p>
+                  <p className="text-[10.5px] text-slate-500 mt-1">{date}</p>
                 </div>
                 <div className="flex gap-1 flex-shrink-0">
                   {!n.read && (
-                    <button type="button" onClick={() => markRead(n.id)} className="p-1.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition">
+                    <button type="button" onClick={() => markRead(n.id)} className="p-2.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition">
                       <Check className="w-3.5 h-3.5" />
                     </button>
                   )}
-                  <button type="button" onClick={() => del(n.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition">
+                  <button type="button" onClick={() => del(n.id)} className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>

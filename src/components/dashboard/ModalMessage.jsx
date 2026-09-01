@@ -52,7 +52,8 @@ export default function ModalMessage() {
           </div>
           <button
             onClick={handleClose}
-            className="p-1 hover:bg-slate-100 rounded-lg transition"
+            className="p-2 hover:bg-slate-100 rounded-lg transition"
+            aria-label="Fermer"
           >
             <X className="w-5 h-5 text-slate-400" />
           </button>

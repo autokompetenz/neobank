@@ -10,14 +10,13 @@ import AccountPage from '../components/dashboard/AccountPage';
 import CardPage from '../components/dashboard/CardPage';
 import IbanFlow from '../components/dashboard/IbanFlow';
 import TransactionsPage from '../components/dashboard/TransactionsPage.jsx';
-import TransferPage from '../components/dashboard/TransferPage.jsx';
 import TransfersPage from '../components/dashboard/TransfersPage.jsx';
 import BeneficiariesPage from '../components/dashboard/BeneficiariesPage.jsx';
 import ProfilePage from '../components/dashboard/ProfilePage.jsx';
 import NotificationsPanel from '../components/dashboard/NotificationsPanel';
 import WithdrawalProgressPage from '../components/dashboard/WithdrawalProgressPage';
 import WithdrawalRequestsPage from '../components/dashboard/WithdrawalRequestsPage';
-import { Clock, Menu, Ban, AlertCircle, RefreshCw, LogOut } from 'lucide-react';
+import { Clock, Menu, Ban, LogOut } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { DashboardSkeleton } from '../components/shared/Skeleton';
 
@@ -383,7 +382,7 @@ export default function DashboardPage() {
           </button>
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ fontSize: 15, fontWeight: 700, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pageTitles[activePage] || 'NEOBANK'}</p>
-            <p style={{ fontSize: 10, color: 'var(--text-3)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userProfile?.email || 'Espace client'}</p>
+            <p style={{ fontSize: 12, color: 'var(--text-3)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userProfile?.email || 'Espace client'}</p>
           </div>
           {userProfile && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
@@ -404,56 +403,6 @@ export default function DashboardPage() {
           )}
         </header>
 
-        {isSuspended && (
-          <div style={{ background: 'rgba(200,16,46,0.06)', borderBottom: '1px solid rgba(200,16,46,0.2)', padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <Ban size={16} style={{ color: '#C8102E', flexShrink: 0 }} />
-            <p style={{ fontSize: 13, color: '#C8102E', fontWeight: 600, margin: 0, flex: 1, minWidth: 0 }}>
-              Votre compte est <strong>suspendu ou bloqué</strong>. Contactez le support.
-            </p>
-          </div>
-        )}
-        {isPending && !isSuspended && (
-          <div style={{ background: 'rgba(250,199,117,0.15)', borderBottom: '1px solid rgba(250,199,117,0.3)', padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <Clock size={16} style={{ color: '#B8860B', flexShrink: 0 }} />
-            <p style={{ fontSize: 13, color: '#B8860B', fontWeight: 600, margin: 0, flex: 1, minWidth: 0 }}>
-              Compte en <strong>attente de validation</strong> par l'administrateur.
-            </p>
-            <button
-              type="button"
-              onClick={handleManualRefresh}
-              disabled={isRefreshing}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px',
-                background: 'rgba(250,199,117,0.2)', border: 'none', borderRadius: 'var(--radius)',
-                fontSize: 11, fontWeight: 600, color: '#B8860B', cursor: 'pointer', flexShrink: 0,
-              }}
-            >
-              <RefreshCw size={12} className={isRefreshing ? 'animate-spin' : ''} />
-              {isRefreshing ? 'Vérification...' : 'Vérifier'}
-            </button>
-          </div>
-        )}
-        {account?.iban && !(account?.status === 'active' && account?.accountVerified) && (
-          <div style={{ background: 'var(--blue-bg)', borderBottom: '1px solid var(--blue-border)', padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <AlertCircle size={16} style={{ color: 'var(--blue)', flexShrink: 0 }} />
-            <p style={{ fontSize: 13, color: 'var(--blue)', fontWeight: 600, margin: 0, flex: 1, minWidth: 0 }}>
-              IBAN <strong>inactif</strong> — Complétez l'activation pour utiliser tous les services.
-            </p>
-            <button
-              type="button"
-              onClick={handleManualRefresh}
-              disabled={isRefreshing}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px',
-                background: 'var(--blue)', border: 'none', borderRadius: 'var(--radius)',
-                fontSize: 11, fontWeight: 600, color: '#fff', cursor: 'pointer', flexShrink: 0,
-              }}
-            >
-              <RefreshCw size={12} className={isRefreshing ? 'animate-spin' : ''} />
-              {isRefreshing ? '...' : 'Vérifier'}
-            </button>
-          </div>
-        )}
         <div className="content-area">
           {pageLoading ? <DashboardSkeleton /> : <div key={activePage} className="slide-up">{renderPage()}</div>}
         </div>

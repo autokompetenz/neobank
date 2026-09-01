@@ -123,11 +123,11 @@ export default function BeneficiariesPage() {
                 <div className="flex gap-1 flex-shrink-0">
                   <button
                     onClick={() => { setEditingId(b.id); setForm({ name: b.name, iban: b.iban, bic: b.bic, bankName: b.bankName || '' }); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                    className="p-2 text-[var(--text-3)] hover:text-[var(--blue)] transition" title="Modifier"
+                    className="p-2.5 text-[var(--text-3)] hover:text-[var(--blue)] transition" title="Modifier"
                   >
                     <Pencil className="w-4 h-4" />
                   </button>
-                  <button onClick={() => remove(b.id)} className="p-2 text-[var(--text-3)] hover:text-red-500 transition" title="Supprimer">
+                  <button onClick={() => remove(b.id)} className="p-2.5 text-[var(--text-3)] hover:text-red-500 transition" title="Supprimer">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>

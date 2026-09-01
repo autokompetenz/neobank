@@ -61,7 +61,7 @@ function BlockedReasonModal({ transfer, onClose, onConfirmed }) {
               TRANSACTION {transfer.status === 'suspended' ? 'SUSPENDUE' : 'EN VÉRIFICATION'}
             </h3>
           </div>
-          <button onClick={onClose} className="text-[var(--text-3)] hover:text-[var(--text)]"><X className="w-4 h-4" /></button>
+          <button onClick={onClose} className="p-2.5 rounded-lg text-[var(--text-3)] hover:text-[var(--text)]" aria-label="Fermer"><X className="w-4 h-4" /></button>
         </div>
 
         <div className="space-y-1.5 text-[13px]">

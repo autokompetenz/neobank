@@ -54,12 +54,6 @@ export default function Overview({ account, transactions, notifications, onNavig
             {statusRow.text}
           </div>
         </div>
-        {userProfile?.kycStatus === 'pending' && (
-          <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-medium px-3 py-2 rounded-xl shrink-0 self-start">
-            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-            KYC à compléter
-          </div>
-        )}
       </div>
 
       {/* KYC Banner */}
@@ -165,10 +159,10 @@ export default function Overview({ account, transactions, notifications, onNavig
             })}
           </div>
           <div className="grid grid-cols-2 gap-2 mt-3.5 pt-3.5 border-t border-[var(--border)]">
-            <button type="button" onClick={() => onNavigate('transfer')} className="btn-outline text-[11.5px] py-2.5 flex items-center justify-center gap-1.5">
+            <button type="button" onClick={() => onNavigate('transfer')} className="btn-outline text-[11.5px] py-3.5 flex items-center justify-center gap-1.5">
               <ArrowLeftRight className="w-3.5 h-3.5" /> Virement
             </button>
-            <button type="button" onClick={() => onNavigate('transactions')} className="btn-outline text-[11.5px] py-2.5 flex items-center justify-center gap-1.5">
+            <button type="button" onClick={() => onNavigate('transactions')} className="btn-outline text-[11.5px] py-3.5 flex items-center justify-center gap-1.5">
               <Activity className="w-3.5 h-3.5" /> Historique
             </button>
           </div>
@@ -207,7 +201,7 @@ export default function Overview({ account, transactions, notifications, onNavig
               <div className="space-y-1.5">
                 <div className="bg-[var(--bg)] rounded-lg px-3 py-2">
                   <div className="text-[9.5px] text-[var(--text-3)] font-mono mb-1">IBAN</div>
-                  <div className="text-[11px] font-mono font-medium tracking-wide">{account.iban}</div>
+                  <div className="text-[11px] font-mono font-medium tracking-wide break-all">{account.iban}</div>
                 </div>
                 <div className="bg-[var(--bg)] rounded-lg px-3 py-2">
                   <div className="text-[9.5px] text-[var(--text-3)] font-mono mb-1">BIC</div>

@@ -68,7 +68,7 @@ export default function AccountPage({ account }) {
             <div key={label} className="bg-[var(--bg)] rounded-xl px-4 py-3 flex items-center justify-between">
               <div>
                 <div className="text-[9.5px] text-[var(--text-3)] font-mono mb-0.5">{label}</div>
-                <div className="text-[11.5px] font-mono font-medium tracking-wide">{value}</div>
+                <div className="text-[11.5px] font-mono font-medium tracking-wide break-all">{value}</div>
               </div>
               <button onClick={() => copy(value, label)} className="copy-btn">
                 <Copy className="w-3 h-3" />

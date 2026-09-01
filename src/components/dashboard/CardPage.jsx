@@ -63,7 +63,7 @@ export default function CardPage({ card, onRefresh }) {
                   {card.status === 'active' ? 'Active' : card.status === 'blocked' ? 'Bloquée' : 'En attente'}
                 </div>
               </div>
-              <p className="text-[12px] sm:text-[16px] font-mono tracking-normal sm:tracking-widest mb-4 leading-relaxed overflow-x-auto">
+              <p className="text-[12px] sm:text-[16px] font-mono tracking-normal sm:tracking-widest mb-4 leading-relaxed break-all">
                 {showDetails && card.fullNumber ? card.fullNumber : '**** **** **** ' + card.last4}
               </p>
               <div className="flex justify-between items-end">
