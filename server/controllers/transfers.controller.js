@@ -25,7 +25,7 @@ async function getTodayTransferred(userId) {
     `SELECT COALESCE(SUM(amount), 0) AS total
        FROM transactions
       WHERE user_id = $1 AND type IN ('transfer','external_transfer')
-        AND status IN ('executed','authorized','completed')
+        AND status IN ('completed','transferring')
         AND created_at::date = CURRENT_DATE`,
     [userId],
   );
@@ -37,7 +37,7 @@ async function isNewBeneficiaryForUser(userId, iban) {
   const r = await pool.query(
     `SELECT 1 FROM transactions
       WHERE user_id = $1 AND type IN ('transfer','external_transfer')
-        AND status IN ('executed','authorized','completed')
+        AND status IN ('completed','transferring')
         AND UPPER(REPLACE(COALESCE(external_iban,''),' ','')) = $2
       LIMIT 1`,
     [userId, clean],
@@ -48,24 +48,19 @@ async function isNewBeneficiaryForUser(userId, iban) {
 /**
  * Évalue les règles actives pour un virement.
  * Retourne: { status, rulesApplied: [], reason, actionRequired }
- * - 'executed'   : aucune règle bloquante -> virement exécuté
- * - 'verifying'  : au moins une règle passée en 'verifying'
- * - 'suspended'  : au moins une règle passée en 'suspended'
+ * - 'pending'    : aucun blocage -> virement en attente de gestion
+ * - 'verifying'  : au moins une règle nécessite une validation
  */
 async function evaluateRules({ userId, amount, iban, kycStatus, accountVerified }) {
   const rules = await getEnabledRules();
   const applied = [];
-  let worst = 'executed';
+  let worst = 'pending';
   let reason = null;
   let actionRequired = null;
 
   const apply = (rule, hit) => {
     applied.push({ key: rule.key, name: rule.name, param: hit });
-    if (rule.action === 'suspended') {
-      worst = 'suspended';
-      reason = reason || rule.reason || rule.name;
-      actionRequired = actionRequired || rule.action_required || null;
-    } else if (rule.action === 'verifying' && worst !== 'suspended') {
+    if (worst !== 'verifying') {
       worst = 'verifying';
       reason = reason || rule.reason || rule.name;
       actionRequired = actionRequired || rule.action_required || null;
@@ -186,12 +181,12 @@ export async function createTransfer(req, res) {
     const tx = txResult.rows[0];
 
     // Notifications selon le statut
-    if (status === 'executed') {
-      await insertNotification(cli, req.userId, 'Virement exécuté', `Votre virement de ${fmt(amount)} vers ${accountHolder.trim()} a été exécuté.`);
+    if (status === 'completed' || status === 'transferring') {
+      await insertNotification(cli, req.userId, 'Virement en cours', `Votre virement de ${fmt(amount)} vers ${accountHolder.trim()} est en cours de transfert.`);
     } else if (status === 'verifying') {
-      await insertNotification(cli, req.userId, 'Virement en vérification', `Votre virement de ${fmt(amount)} nécessite une vérification. ${evalResult.reason || ''}`);
+      await insertNotification(cli, req.userId, 'Virement en cours de validation', `Votre virement de ${fmt(amount)} nécessite une validation. ${evalResult.reason || ''}`);
     } else {
-      await insertNotification(cli, req.userId, 'Virement suspendu', `Votre virement de ${fmt(amount)} est suspendu. ${evalResult.reason || ''}`);
+      await insertNotification(cli, req.userId, 'Virement en attente', `Votre virement de ${fmt(amount)} est en attente de gestion. ${evalResult.reason || ''}`);
     }
 
     await cli.query('COMMIT');
@@ -244,19 +239,19 @@ export async function confirmVerification(req, res) {
       accountVerified: up.account_verified,
     });
 
-    const finalStatus = evalResult.status === 'suspended' ? 'suspended' : 'executed';
+    const finalStatus = evalResult.status === 'verifying' ? 'verifying' : 'transferring';
     const history = [...(tx.decision_history || [])];
-    history.push({ status: finalStatus, at: new Date().toISOString(), by: 'client', note: 'Vérification complétée' });
+    history.push({ status: finalStatus, at: new Date().toISOString(), by: 'client', note: 'Validation complétée' });
 
     await cli.query(
       `UPDATE transactions SET status = $1, reason = $2, action_required = $3, decision_history = $4 WHERE id = $5`,
       [finalStatus, evalResult.reason, evalResult.actionRequired, JSON.stringify(history), id],
     );
 
-    if (finalStatus === 'executed') {
-      await insertNotification(cli, req.userId, 'Virement exécuté', `Votre virement de ${fmt(tx.amount)} a été confirmé et exécuté.`);
+    if (finalStatus === 'transferring') {
+      await insertNotification(cli, req.userId, 'Virement en cours de transfert', `Votre virement de ${fmt(tx.amount)} est en cours de transfert.`);
     } else {
-      await insertNotification(cli, req.userId, 'Virement suspendu', `Votre virement reste suspendu. ${evalResult.reason || ''}`);
+      await insertNotification(cli, req.userId, 'Virement bloqué en validation', `Votre virement reste en cours de validation. ${evalResult.reason || ''}`);
     }
 
     await cli.query('COMMIT');
@@ -271,7 +266,7 @@ export async function confirmVerification(req, res) {
   }
 }
 
-/** Le client paie les frais de retrait NEOBANK demandés par l'admin -> libère le virement. */
+/** Le client paie les frais de retrait NEOBANK demandés par l'admin -> libère le virement en transfert. */
 export async function payTransferFees(req, res) {
   const { id } = req.params;
   const cli = await pool.connect();
@@ -288,9 +283,9 @@ export async function payTransferFees(req, res) {
     const tx = r.rows[0];
     const fees = Number(tx.fees || 0);
 
-    if (tx.status !== 'suspended' || fees <= 0) {
+    if (!['pending_confirmation', 'verifying'].includes(tx.status) || fees <= 0) {
       await cli.query('ROLLBACK');
-      return res.status(400).json({ error: 'Aucun frais de retrait en attente pour ce virement' });
+      return res.status(400).json({ error: 'Aucun frais NEOBANK en attente pour ce virement' });
     }
 
     const me = await cli.query(`SELECT * FROM users WHERE id = $1 FOR UPDATE`, [req.userId]);
@@ -300,21 +295,21 @@ export async function payTransferFees(req, res) {
       return res.status(400).json({ error: `Solde insuffisant pour régler les frais de ${fmt(fees)}` });
     }
 
-    // Débiter les frais du solde client et libérer le virement
+    // Débiter les frais du solde client et lancer le transfert
     await cli.query(`UPDATE users SET balance = balance - $1 WHERE id = $2`, [fees, req.userId]);
     const history = [...(tx.decision_history || [])];
-    history.push({ status: 'executed', at: new Date().toISOString(), by: 'client', note: `Frais NEOBANK de ${fmt(fees)} payés, virement libéré`, fees });
+    history.push({ status: 'transferring', at: new Date().toISOString(), by: 'client', note: `Frais NEOBANK de ${fmt(fees)} payés, virement en cours de transfert`, fees });
     await cli.query(
-      `UPDATE transactions SET status = 'executed', fees = $1, action_required = NULL, decision_history = $2 WHERE id = $3`,
+      `UPDATE transactions SET status = 'transferring', fees = $1, action_required = NULL, decision_history = $2 WHERE id = $3`,
       [fees, JSON.stringify(history), id],
     );
 
-    await insertNotification(cli, req.userId, 'Frais payés - virement exécuté',
-      `Les frais NEOBANK de ${fmt(fees)} ont été réglés. Votre virement de ${fmt(tx.amount)} est exécuté.`);
+    await insertNotification(cli, req.userId, 'Frais payés - virement en cours de transfert',
+      `Les frais NEOBANK de ${fmt(fees)} ont été réglés. Votre virement de ${fmt(tx.amount)} est en cours de transfert.`);
 
     await cli.query('COMMIT');
     const after = await pool.query(`SELECT * FROM users WHERE id = $1`, [req.userId]);
-    res.json({ transfer: toTransfer({ ...tx, status: 'executed', fees }), account: toAccountSimple(after.rows[0]) });
+    res.json({ transfer: toTransfer({ ...tx, status: 'transferring', fees }), account: toAccountSimple(after.rows[0]) });
   } catch (e) {
     await cli.query('ROLLBACK');
     console.error(e);
@@ -374,21 +369,23 @@ function toAccountSimple(row) {
 }
 
 function messageForStatus(status) {
-  if (status === 'executed') return 'Virement exécuté avec succès.';
-  if (status === 'verifying') return 'Virement en cours de vérification.';
-  return 'Virement suspendu. Consultez le motif pour agir.';
+  if (status === 'completed') return 'Transfert effectué avec succès.';
+  if (status === 'pending') return 'Virement en attente de validation.';
+  if (status === 'verifying') return 'Virement en cours de validation.';
+  if (status === 'pending_confirmation') return 'Virement en cours de confirmation. Consultez les frais NEOBANK.';
+  if (status === 'transferring') return 'Virement en cours de transfert.';
+  return 'Virement en attente. Consultez le motif pour agir.';
 }
 
 export function statusLabel(status) {
   const map = {
     pending: 'En attente',
-    verifying: 'En vérification',
-    suspended: 'Suspendu',
-    authorized: 'Autorisé',
-    executed: 'Exécuté',
+    pending_confirmation: 'En cours de confirmation',
+    verifying: 'En cours de validation',
+    transferring: 'En cours de transfert',
+    completed: 'Transfert effectué',
     refused: 'Refusé',
-    completed: 'Exécuté',
-    failed: 'Échoué',
+    blocked: 'Bloqué',
   };
   return map[status] || status;
 }

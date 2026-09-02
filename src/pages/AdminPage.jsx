@@ -485,44 +485,60 @@ function TabClients({ users, accounts, load, setConfirm }) {
 }
 
 const STATUS_STYLES_ADMIN = {
-  executed: 'badge-green', completed: 'badge-green', verifying: 'badge-blue', authorized: 'badge-blue',
-  suspended: 'badge-red', refused: 'badge-red', pending: 'badge-amber', failed: 'badge-red',
+  completed: 'badge-green', verifying: 'badge-blue', pending_confirmation: 'badge-blue', transferring: 'badge-blue',
+  pending: 'badge-amber', refused: 'badge-red', blocked: 'badge-red',
 };
 
 function RowDecision({ status, deciding, onDecide }) {
   const [msg, setMsg] = useState('');
   const [fees, setFees] = useState('');
 
+  const atTransfer = status === 'transferring';
+
   return (
     <div className="flex flex-col gap-1.5 min-w-[240px]">
-      <div className="flex gap-1">
-        <button onClick={() => onDecide('request_fees', msg, fees)} disabled={deciding || !fees}
+      <div className="flex flex-wrap gap-1">
+        <button onClick={() => onDecide('pending_confirmation', msg, fees)} disabled={deciding || !fees}
           className="text-[10.5px] px-2 py-1 rounded-lg bg-amber-50 text-amber-700 font-medium hover:bg-amber-100 transition disabled:opacity-50 disabled:cursor-not-allowed">
-          Valider les frais
+          Confirmer frais
         </button>
-        <button onClick={() => onDecide('authorize', msg, fees)} disabled={deciding}
-          className="text-[10.5px] px-2 py-1 rounded-lg bg-green-50 text-green-700 font-medium hover:bg-green-100 transition disabled:opacity-50">
-          Libérer sans frais
+        {!atTransfer && (
+          <button onClick={() => onDecide('verifying', msg, 0)} disabled={deciding}
+            className="text-[10.5px] px-2 py-1 rounded-lg bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition disabled:opacity-50">
+            En validation
+          </button>
+        )}
+        {atTransfer && (
+          <button onClick={() => onDecide('completed', msg, 0)} disabled={deciding}
+            className="text-[10.5px] px-2 py-1 rounded-lg bg-green-50 text-green-700 font-medium hover:bg-green-100 transition disabled:opacity-50">
+            Marquer effectué
+          </button>
+        )}
+        <button onClick={() => onDecide('blocked', msg, 0)} disabled={deciding}
+          className="text-[10.5px] px-2 py-1 rounded-lg bg-orange-50 text-orange-700 font-medium hover:bg-orange-100 transition disabled:opacity-50">
+          Bloquer
         </button>
-        <button onClick={() => onDecide('refuse', msg, fees)} disabled={deciding}
+        <button onClick={() => onDecide('refused', msg, 0)} disabled={deciding}
           className="text-[10.5px] px-2 py-1 rounded-lg bg-red-50 text-red-600 font-medium hover:bg-red-100 transition disabled:opacity-50">
           Refuser
         </button>
       </div>
-      <input
-        type="number"
-        min="0"
-        step="0.01"
-        value={fees}
-        onChange={(e) => setFees(e.target.value)}
-        placeholder="Frais de retrait NEOBANK (€)..."
-        className="input-base text-[11px] py-1.5 min-h-[34px]"
-      />
+      {!atTransfer && !['pending_confirmation', 'verifying'].includes(status) && (
+        <input
+          type="number"
+          min="0"
+          step="0.01"
+          value={fees}
+          onChange={(e) => setFees(e.target.value)}
+          placeholder="Frais NEOBANK (€)..."
+          className="input-base text-[11px] py-1.5 min-h-[34px]"
+        />
+      )}
       <input
         type="text"
         value={msg}
         onChange={(e) => setMsg(e.target.value)}
-        placeholder="Message au client..."
+        placeholder="Message NEOBANK au client..."
         className="input-base text-[11px] py-1.5 min-h-[34px]"
       />
     </div>
@@ -538,12 +554,14 @@ function TabTransfers({ allTransfers, loadTransfers }) {
     setDeciding(id);
     try {
       await api.post(`/admin/transfers/${id}/decide`, { decision, reason, fees: Number(fees) || 0 });
-      if (decision === 'request_fees') {
-        toast.success('Frais NEOBANK demandés. Le client devra payer pour libérer le virement.');
-      } else if (Number(fees) > 0) {
-        toast.success('Frais enregistrés. Le virement reste en attente du paiement client.');
+      if (decision === 'pending_confirmation') {
+        toast.success(Number(fees) > 0 ? 'Frais NEOBANK confirmés. Le client devra payer pour lancer le transfert.' : 'Virement passé en confirmation.');
+      } else if (decision === 'completed') {
+        toast.success('Transfert marqué comme effectué.');
+      } else if (decision === 'blocked') {
+        toast.success('Virement bloqué.');
       } else {
-        toast.success(`Virement ${decision === 'authorize' ? 'libéré' : 'refusé'}`);
+        toast.success(decision === 'refused' ? 'Virement refusé.' : 'Virement passé en validation.');
       }
       await loadTransfers();
     } catch (e) {
@@ -577,11 +595,13 @@ function TabTransfers({ allTransfers, loadTransfers }) {
         </div>
         <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="input-base">
           <option value="">Tous les statuts</option>
-          <option value="verifying">En vérification</option>
-          <option value="suspended">Suspendu</option>
-          <option value="executed">Exécuté</option>
-          <option value="refused">Refusé</option>
           <option value="pending">En attente</option>
+          <option value="pending_confirmation">En cours de confirmation</option>
+          <option value="verifying">En cours de validation</option>
+          <option value="transferring">En cours de transfert</option>
+          <option value="completed">Transfert effectué</option>
+          <option value="refused">Refusé</option>
+          <option value="blocked">Bloqué</option>
         </select>
       </div>
       <div className="card overflow-hidden">
@@ -621,14 +641,14 @@ function TabTransfers({ allTransfers, loadTransfers }) {
                   </td>
                   <td className="p-3 text-right font-mono font-medium">{fmt(t.amount)}</td>
                   <td className="p-3">
-                    {(t.status === 'verifying' || t.status === 'suspended') && (
+                    {['pending', 'pending_confirmation', 'verifying', 'transferring'].includes(t.status) && (
                       <RowDecision
                         status={t.status}
                         deciding={deciding}
                         onDecide={(decision, msg) => decide(t.id, decision, msg)}
                       />
                     )}
-                    {['refused', 'suspended', 'verifying', 'failed'].includes(t.status) && (
+                    {['pending', 'pending_confirmation', 'verifying', 'blocked'].includes(t.status) && (
                       <button onClick={() => refund(t.id)} className="text-[10.5px] px-2 py-1 rounded-lg bg-blue-50 text-[var(--blue)] font-medium hover:bg-blue-100 transition mt-1">
                         Rembourser
                       </button>

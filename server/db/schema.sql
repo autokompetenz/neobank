@@ -223,10 +223,17 @@ BEGIN
 EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
+-- Migrer les anciens statuts de virements vers les nouveaux états
+UPDATE transactions SET status = 'completed'   WHERE type IN ('transfer','external_transfer') AND status = 'executed';
+UPDATE transactions SET status = 'completed'   WHERE type IN ('transfer','external_transfer') AND status = 'authorized';
+UPDATE transactions SET status = 'verifying'   WHERE type IN ('transfer','external_transfer') AND status = 'suspended';
+UPDATE transactions SET status = 'refused'     WHERE type IN ('transfer','external_transfer') AND status = 'failed';
+UPDATE transactions SET status = 'refused'     WHERE type IN ('transfer','external_transfer') AND status = 'refused';
+
 ALTER TABLE transactions
     ADD CONSTRAINT transactions_status_check
     CHECK (status IN (
-        'pending','verifying','suspended','authorized','executed','refused','completed','failed'
+        'pending','pending_confirmation','verifying','transferring','completed','refused','blocked','failed'
     ));
 
 -- Colonnes pour le flux de virements / blocage

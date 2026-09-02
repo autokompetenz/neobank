@@ -6,26 +6,26 @@ import { ArrowLeftRight, Info, ShieldAlert, AlertTriangle, CheckCircle2, X } fro
 const fmt = (n) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n || 0);
 
 const STATUS_STYLES = {
-  executed: 'badge-green',
-  completed: 'badge-green',
-  verifying: 'badge-blue',
-  authorized: 'badge-blue',
-  suspended: 'badge-red',
-  refused: 'badge-red',
   pending: 'badge-amber',
-  failed: 'badge-red',
+  pending_confirmation: 'badge-blue',
+  verifying: 'badge-blue',
+  transferring: 'badge-blue',
+  completed: 'badge-green',
+  refused: 'badge-red',
+  blocked: 'badge-red',
 };
 
 const STATUS_LABELS = {
-  executed: 'Exécuté',
-  completed: 'Exécuté',
-  verifying: 'En vérification',
-  authorized: 'Autorisé',
-  suspended: 'Suspendu',
-  refused: 'Refusé',
   pending: 'En attente',
-  failed: 'Échoué',
+  pending_confirmation: 'En cours de confirmation',
+  verifying: 'En cours de validation',
+  transferring: 'En cours de transfert',
+  completed: 'Transfert effectué',
+  refused: 'Refusé',
+  blocked: 'Bloqué',
 };
+
+const OPENABLE = ['pending', 'pending_confirmation', 'verifying', 'blocked', 'refused'];
 
 function BlockedReasonModal({ transfer, onClose, onConfirmed }) {
   const [loading, setLoading] = useState(false);
@@ -35,7 +35,7 @@ function BlockedReasonModal({ transfer, onClose, onConfirmed }) {
     setLoading(true);
     try {
       await api.post(`/transfers/${transfer.id}/confirm-verification`);
-      toast.success('Vérification complétée. Virement exécuté !');
+      toast.success('Validation complétée. Virement en cours de transfert !');
       onConfirmed?.();
       onClose();
     } catch (e) {
@@ -49,7 +49,7 @@ function BlockedReasonModal({ transfer, onClose, onConfirmed }) {
     setLoading(true);
     try {
       await api.post(`/transfers/${transfer.id}/pay-fees`);
-      toast.success('Frais NEOBANK payés. Virement exécuté !');
+      toast.success('Frais NEOBANK payés. Virement en cours de transfert !');
       onConfirmed?.();
       onClose();
     } catch (e) {
@@ -59,7 +59,10 @@ function BlockedReasonModal({ transfer, onClose, onConfirmed }) {
     }
   };
 
-  const hasFees = Number(transfer.fees || 0) > 0;
+  const canPayFees = ['pending_confirmation', 'verifying'].includes(transfer.status);
+  const hasFees = Number(transfer.fees || 0) > 0 && canPayFees;
+  const blocked = transfer.status === 'blocked';
+  const refused = transfer.status === 'refused';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -68,13 +71,13 @@ function BlockedReasonModal({ transfer, onClose, onConfirmed }) {
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{
-              background: transfer.status === 'suspended' ? 'rgba(200,16,46,0.1)' : 'var(--blue-bg)',
-              color: transfer.status === 'suspended' ? '#C8102E' : 'var(--blue)'
+              background: blocked || refused ? 'rgba(200,16,46,0.1)' : 'var(--blue-bg)',
+              color: blocked || refused ? '#C8102E' : 'var(--blue)'
             }}>
-              {transfer.status === 'suspended' ? <AlertTriangle className="w-4 h-4" /> : <ShieldAlert className="w-4 h-4" />}
+              {blocked || refused ? <AlertTriangle className="w-4 h-4" /> : <ShieldAlert className="w-4 h-4" />}
             </div>
             <h3 className="text-[16px] font-bold tracking-tight">
-              {transfer.status === 'suspended' ? 'Virement suspendu' : 'Virement en cours de validation'}
+              {blocked ? 'Virement bloqué' : refused ? 'Virement refusé' : STATUS_LABELS[transfer.status] || 'Virement'}
             </h3>
           </div>
           <button onClick={onClose} className="p-2.5 rounded-lg text-[var(--text-3)] hover:text-[var(--text)]" aria-label="Fermer"><X className="w-4 h-4" /></button>
@@ -88,9 +91,9 @@ function BlockedReasonModal({ transfer, onClose, onConfirmed }) {
           <div className="flex justify-between"><span className="text-[var(--text-3)]">Date</span><span>{new Date(transfer.createdAt).toLocaleDateString('fr-FR')}</span></div>
         </div>
 
-        <div className="rounded-xl p-3" style={{ background: transfer.status === 'suspended' ? 'rgba(200,16,46,0.06)' : 'var(--blue-bg)' }}>
-          <p className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: transfer.status === 'suspended' ? '#C8102E' : 'var(--blue)' }}>Motif</p>
-          <p className="text-[13px] text-[var(--text)]">{transfer.reason || 'Votre virement est en cours de validation par un administrateur. Toute éventuelle somme (frais) à payer vous sera indiquée ici.'}</p>
+        <div className="rounded-xl p-3" style={{ background: blocked || refused ? 'rgba(200,16,46,0.06)' : 'var(--blue-bg)' }}>
+          <p className="text-[11px] font-semibold uppercase tracking-wide mb-1" style={{ color: blocked || refused ? '#C8102E' : 'var(--blue)' }}>Motif / Message NEOBANK</p>
+          <p className="text-[13px] text-[var(--text)]">{transfer.reason || 'Votre virement est en cours de gestion. Toute éventuelle somme (frais) à payer vous sera indiquée ici.'}</p>
         </div>
 
         {transfer.actionRequired && (
@@ -108,10 +111,10 @@ function BlockedReasonModal({ transfer, onClose, onConfirmed }) {
           </div>
         )}
 
-        {transfer.status === 'verifying' && (
+        {transfer.status === 'verifying' && !hasFees && (
           <button onClick={confirmVerification} disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 py-2.5 text-[12px]">
             {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-            Compléter la vérification
+            Compléter la validation
           </button>
         )}
         {hasFees && (
@@ -120,8 +123,8 @@ function BlockedReasonModal({ transfer, onClose, onConfirmed }) {
             Payer les frais ({fmt(transfer.fees)})
           </button>
         )}
-        {transfer.status === 'suspended' && !hasFees && (
-          <p className="text-[11.5px] text-[var(--text-3)] text-center">Transaction suspendue. Contactez le support pour plus d'informations.</p>
+        {blocked && (
+          <p className="text-[11.5px] text-[var(--text-3)] text-center">Virement bloqué. Contactez le support NEOBANK pour plus d'informations.</p>
         )}
       </div>
     </div>
@@ -154,6 +157,18 @@ export default function TransfersPage({ account, onSuccess }) {
 
   useEffect(() => { load(); }, [load]);
 
+  // Rechargement auto tant qu'un virement attend une gestion/paiement (frais).
+  useEffect(() => {
+    const active = transfers.some((t) => ['pending', 'pending_confirmation', 'verifying'].includes(t.status));
+    if (!active) return;
+    const id = setInterval(() => {
+      api.get('/transfers')
+        .then((res) => setTransfers(res.data.transfers || []))
+        .catch(() => {});
+    }, 8000);
+    return () => clearInterval(id);
+  }, [transfers]);
+
   const selectBeneficiary = (id) => {
     const b = beneficiaries.find((x) => x.id === id);
     if (!b) return;
@@ -180,12 +195,13 @@ export default function TransfersPage({ account, onSuccess }) {
         label: form.label?.trim() || undefined,
         beneficiaryId: form.beneficiaryId || undefined,
       });
-      const notExecuted = data.transfer && data.transfer.status !== 'executed';
-      toast.success(notExecuted ? 'Virement en cours de validation' : (data.message || 'Virement traité'));
+      const st = data.transfer?.status;
+      const openable = OPENABLE.includes(st);
+      toast.success(openable ? 'Virement en attente de gestion' : (data.message || 'Virement traité'));
       setForm({ beneficiaryId: '', accountHolder: '', iban: '', bic: '', bankName: '', amount: '', label: '' });
       await load();
       onSuccess?.();
-      if (data.transfer && data.transfer.status !== 'executed') setSelected(data.transfer);
+      if (openable) setSelected(data.transfer);
     } catch (err) {
       toast.error(err.response?.data?.error || 'Erreur lors du virement');
     } finally {
@@ -220,9 +236,9 @@ export default function TransfersPage({ account, onSuccess }) {
                 <button
                   key={t.id}
                   type="button"
-                  onClick={() => (t.status === 'suspended' || t.status === 'verifying') && setSelected(t)}
+                  onClick={() => OPENABLE.includes(t.status) && setSelected(t)}
                   className={`card p-3 w-full text-left flex items-center justify-between gap-3 hover:border-[var(--text-3)] transition ${
-                    (t.status === 'suspended' || t.status === 'verifying') ? 'cursor-pointer' : 'cursor-default'
+                    OPENABLE.includes(t.status) ? 'cursor-pointer' : 'cursor-default'
                   }`}
                 >
                   <div className="min-w-0">
@@ -235,14 +251,14 @@ export default function TransfersPage({ account, onSuccess }) {
                     <span className={`text-[10.5px] px-2 py-0.5 rounded-full font-medium ${STATUS_STYLES[t.status] || 'badge-amber'}`}>
                       {STATUS_LABELS[t.status] || t.status}
                     </span>
-                    {Number(t.fees) > 0 && t.status === 'suspended' && (
+                    {Number(t.fees) > 0 && ['pending_confirmation', 'verifying'].includes(t.status) && (
                       <span className="text-[10.5px] px-2 py-0.5 rounded-full font-semibold text-[var(--blue)] bg-[var(--blue-bg)]">
                         Frais à payer : {fmt(Number(t.fees))}
                       </span>
                     )}
-                    {(t.status === 'suspended' || t.status === 'verifying') && (
+                    {OPENABLE.includes(t.status) && (
                       <span className="text-[10.5px] text-[var(--blue)] font-medium flex items-center gap-0.5">
-                        <ShieldAlert className="w-3 h-3" /> Pourquoi suspendu ?
+                        <ShieldAlert className="w-3 h-3" /> Voir le détail
                       </span>
                     )}
                   </div>

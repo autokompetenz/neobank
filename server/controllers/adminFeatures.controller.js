@@ -58,10 +58,10 @@ export async function listAllTransfers(req, res) {
 /** Action admin sur un virement bloqué : autoriser, suspendre, refuser, rembourser. */
 export async function decideTransfer(req, res) {
   const { id } = req.params;
-  const { decision, reason, actionRequired } = req.body; // authorize | refuse | suspend | release
+  const { decision, reason, actionRequired } = req.body; // pending_confirmation | verifying | completed | refused | blocked
   const fees = Number(req.body.fees);
 
-  if (!['authorize', 'refuse', 'suspend', 'release', 'request_fees'].includes(decision)) {
+  if (!['pending_confirmation', 'verifying', 'completed', 'refused', 'blocked'].includes(decision)) {
     return res.status(400).json({ error: 'Décision invalide' });
   }
   if (!Number.isFinite(fees)) {
@@ -82,76 +82,84 @@ export async function decideTransfer(req, res) {
     const tx = existing.rows[0];
     const before = tx.status;
 
-    // Paiement de frais demandé par NEOBANK : on ne valide pas directement, on
-    // passe le virement en attente de paiement (suspended) et le client devra
-    // payer les frais pour que le virement soit libéré.
-    const feesPending = (fees > 0 && decision !== 'refuse') || decision === 'request_fees';
+    // Frais NEOBANK demandés : on ne valide pas directement le transfert, on passe
+    // en attente de confirmation (pending_confirmation) et le client devra payer
+    // les frais pour lancer le transfert.
+    const feesForDecision = decision === 'pending_confirmation' ? fees : 0;
+    const isFeesRequest = decision === 'pending_confirmation' && fees > 0;
     let newStatus;
-    let note = `Décision admin: ${decision}`;
-    const finalStates = ['executed', 'refused'];
+    let note;
+    const finalStates = ['completed', 'refused', 'blocked'];
     switch (decision) {
-      case 'request_fees':
-        newStatus = 'suspended';
-        note = reason || (fees > 0 ? `Frais NEOBANK de ${fmt(fees)} à payer` : 'Frais NEOBANK à payer avant exécution');
+      case 'pending_confirmation':
+        newStatus = 'pending_confirmation';
+        note = isFeesRequest ? (reason || `Frais NEOBANK de ${fmt(fees)} à payer`) : (reason || 'En attente de confirmation NEOBANK');
         break;
-      case 'authorize':
-        newStatus = feesPending ? 'suspended' : 'executed';
-        note = feesPending ? (reason || 'Frais NEOBANK à payer avant exécution') : 'Autorisé par l\'administrateur';
+      case 'verifying':
+        newStatus = 'verifying';
+        note = reason || 'Virement mis en cours de validation';
         break;
-      case 'refuse':
+      case 'completed':
+        newStatus = 'completed';
+        note = reason || 'Transfert effectué';
+        break;
+      case 'refused':
         newStatus = 'refused';
-        note = 'Refusé par l\'administrateur';
+        note = reason || 'Refusé par NEOBANK';
         break;
-      case 'suspend':
-        newStatus = 'suspended';
-        note = reason || 'Suspendu par l\'administrateur';
-        break;
-      case 'release':
-        newStatus = 'executed';
-        note = 'Vérification complétée, virement libéré';
+      case 'blocked':
+        newStatus = 'blocked';
+        note = reason || 'Virement bloqué par NEOBANK';
         break;
     }
 
-    // Ne pas re-décider un virement déjà dans un état final (ex: re-refuser un exécuté).
+    // Ne pas re-décider un virement déjà dans un état final (ex: re-refuser un effectué).
     if (finalStates.includes(before) && before !== newStatus) {
       await cli.query('ROLLBACK');
       return res.status(400).json({ error: 'Ce virement est déjà dans un état final, aucune décision possible' });
     }
 
-    // Si refusé ou suspendu après débit, pas de remboursement automatique sauf demande explicite.
-    // release/authorize -> exécuté (déjà débité).
     const history = [...(tx.decision_history || [])];
-    const historyNote = feesPending ? (reason || 'Frais NEOBANK à payer') : note;
-    history.push({ status: newStatus, at: new Date().toISOString(), by: req.userRole || 'admin', note: historyNote, reason: reason || null, fees: feesPending ? fees : null });
+    history.push({
+      status: newStatus,
+      at: new Date().toISOString(),
+      by: req.userRole || 'admin',
+      note,
+      reason: reason || null,
+      fees: isFeesRequest ? fees : null,
+    });
 
-    const newReason = feesPending
-      ? (reason || `Frais NEOBANK de ${fmt(fees)} à payer avant exécution du virement.`)
-      : (reason || (newStatus === 'suspended' ? tx.reason : null) || null);
-    const newActionRequired = feesPending
-      ? `Paiement des frais de retrait de ${fmt(fees)} requis pour libérer votre virement.`
-      : (actionRequired || (newStatus === 'suspended' ? tx.action_required : null) || null);
+    const newReason = newStatus === 'pending_confirmation'
+      ? (reason || (fees > 0 ? `Frais NEOBANK de ${fmt(fees)} à payer avant le transfert.` : (tx.reason || 'Transaction en cours de confirmation.')))
+      : (reason || tx.reason || null);
+    const newActionRequired = isFeesRequest
+      ? `Paiement des frais NEOBANK de ${fmt(fees)} requis pour lancer votre transfert.`
+      : (actionRequired || null);
 
     await cli.query(
       `UPDATE transactions SET status = $1, reason = $2, action_required = $3, decision_history = $4, fees = $5
        WHERE id = $6`,
       [newStatus, newReason, newActionRequired,
-       JSON.stringify(history), feesPending ? fees : 0, id],
+       JSON.stringify(history), isFeesRequest ? fees : tx.fees || 0, id],
     );
 
     // Notification client
     let notifTitle, notifMsg;
-    if (newStatus === 'executed') {
-      notifTitle = 'Virement autorisé';
-      notifMsg = `Votre virement de ${fmt(tx.amount)} a été autorisé et exécuté.`;
+    if (newStatus === 'completed') {
+      notifTitle = 'Transfert effectué';
+      notifMsg = `Votre virement de ${fmt(tx.amount)} a été effectué.`;
     } else if (newStatus === 'refused') {
       notifTitle = 'Virement refusé';
       notifMsg = `Votre virement de ${fmt(tx.amount)} a été refusé. ${newReason || ''}`;
-    } else if (feesPending) {
-      notifTitle = 'Frais de retrait requis';
-      notifMsg = `Des frais NEOBANK de ${fmt(fees)} sont requis pour libérer votre virement de ${fmt(tx.amount)}. ${newReason || ''}`;
+    } else if (newStatus === 'blocked') {
+      notifTitle = 'Virement bloqué';
+      notifMsg = `Votre virement de ${fmt(tx.amount)} a été bloqué. ${newReason || ''}`;
+    } else if (isFeesRequest) {
+      notifTitle = 'Frais NEOBANK demandés';
+      notifMsg = `Des frais NEOBANK de ${fmt(fees)} sont demandés pour votre virement de ${fmt(tx.amount)}. Examinez les frais pour continuer.`;
     } else {
-      notifTitle = 'Virement suspendu';
-      notifMsg = `Votre virement de ${fmt(tx.amount)} est suspendu. ${newReason || ''}`;
+      notifTitle = 'Virement en cours de gestion';
+      notifMsg = `Votre virement de ${fmt(tx.amount)} est ${statusLabel(newStatus)}.${newReason ? ' ' + newReason : ''}`;
     }
     await insertNotification(cli, tx.user_id, notifTitle, notifMsg);
 
@@ -162,7 +170,7 @@ export async function decideTransfer(req, res) {
       entityType: 'transaction',
       entityId: id,
       oldValue: { status: before },
-      newValue: { status: newStatus, fees: feesPending ? fees : null, reason: newReason || null },
+      newValue: { status: newStatus, fees: isFeesRequest ? fees : null, reason: newReason || null },
       meta: { amount: Number(tx.amount), clientId: tx.user_id },
     });
 
@@ -195,9 +203,9 @@ export async function refundTransfer(req, res) {
 
     // Empêcher le double remboursement / la création de monnaie : seuls les états
     // non-exécutés ET non-déjà-refusés peuvent être remboursés, une seule fois.
-    if (!['suspended', 'verifying', 'failed'].includes(tx.status)) {
+    if (!['pending', 'pending_confirmation', 'verifying', 'blocked'].includes(tx.status)) {
       await cli.query('ROLLBACK');
-      return res.status(400).json({ error: 'Seul un virement non exécuté et non remboursé peut être remboursé' });
+      return res.status(400).json({ error: 'Seul un virement non effectué et non remboursé peut être remboursé' });
     }
     if (Array.isArray(tx.decision_history) && tx.decision_history.some((h) => h.status === 'refused' && h.note === 'Virement remboursé au solde client')) {
       await cli.query('ROLLBACK');
