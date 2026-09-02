@@ -104,14 +104,6 @@ function BlockedReasonModal({ transfer, onClose, onConfirmed }) {
           </div>
         )}
 
-        {hasFees && (
-          <div className="rounded-xl p-3 bg-[var(--bg)]">
-            <p className="text-[11px] font-semibold uppercase tracking-wide mb-1 text-[var(--text-3)]">Frais NEOBANK à payer</p>
-            <p className="text-[16px] font-mono font-bold text-[var(--blue)]">{fmt(transfer.fees)}</p>
-            <p className="text-[11px] text-[var(--text-3)] mt-1">{showPay ? 'Ces frais seront débités de votre solde pour lancer le transfert.' : 'Frais NEOBANK appliqués à ce virement.'}</p>
-          </div>
-        )}
-
         {transfer.status === 'verifying' && !showPay && (
           <button onClick={confirmVerification} disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 py-2.5 text-[12px]">
             {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
