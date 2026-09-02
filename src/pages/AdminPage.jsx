@@ -232,7 +232,7 @@ export default function AdminPage() {
             <p className="text-[var(--text-3)] text-[13px]">Chargement…</p>
           ) : (
             <>
-              {tab === 'overview' && <TabOverview {...shared} totalBalance={totalBalance} pendingIban={pendingIban} pendingCards={pendingCards} pendingAccounts={pendingAccounts} pendingKyc={pendingKyc} pendingActivations={pendingActivations} />}
+              {tab === 'overview' && <TabOverview {...shared} allTransfers={allTransfers} totalBalance={totalBalance} pendingIban={pendingIban} pendingCards={pendingCards} pendingAccounts={pendingAccounts} pendingKyc={pendingKyc} pendingActivations={pendingActivations} />}
               {tab === 'clients' && <TabClients {...shared} />}
               {tab === 'kyc' && <TabKyc {...shared} />}
               {tab === 'iban' && <TabIban {...shared} />}
@@ -263,38 +263,109 @@ export default function AdminPage() {
 }
 
 // TabOverview component
-function TabOverview({ users, totalBalance, pendingIban, pendingCards, pendingAccounts, pendingKyc, pendingActivations, setTab }) {
+function TabOverview({ users, accounts, totalBalance, pendingIban, pendingCards, pendingAccounts, pendingKyc, pendingActivations, setTab, allTransfers = [], requests }) {
+  const transferCount = (s) => allTransfers.filter((t) => t.status === s).length;
+  const toHandleTransfers = ['pending', 'pending_confirmation', 'verifying'].reduce((n, s) => n + transferCount(s), 0);
+  const pendingRequests = (requests || []).filter((r) => r.status === 'pending').length;
+  const totalPending = pendingIban + pendingCards + pendingAccounts + pendingKyc + pendingActivations + pendingRequests;
+
+  const stats = [
+    { label: 'Clients actifs', value: users.length, sub: 'comptes enregistrés', icon: Users, color: 'bg-blue-500/10 text-[var(--blue)]', target: 'clients' },
+    { label: 'Masse totale', value: fmt(totalBalance), sub: 'solde agrégé', icon: TrendingUp, color: 'bg-emerald-500/10 text-emerald-600', target: 'transactions' },
+    { label: 'Virements à traiter', value: toHandleTransfers, sub: 'en attente / à confirmer', icon: ArrowLeftRight, color: 'bg-amber-500/10 text-amber-600', target: 'transfers' },
+    { label: 'Demandes en attente', value: totalPending, sub: 'IBAN · KYC · activations', icon: AlertTriangle, color: 'bg-red-500/10 text-red-600', target: pendingActivations ? 'withdrawal-requests' : 'iban' },
+  ];
+
+  const transferStats = [
+    { label: 'En attente', key: 'pending', color: 'bg-amber-100 text-amber-700' },
+    { label: 'À confirmer', key: 'pending_confirmation', color: 'bg-blue-100 text-blue-700' },
+    { label: 'En validation', key: 'verifying', color: 'bg-violet-100 text-violet-700' },
+    { label: 'Effectués', key: 'completed', color: 'bg-emerald-100 text-emerald-700' },
+  ];
+
   return (
-    <div className="space-y-4">
-      <h1 className="text-[18px] font-semibold">Vue d'ensemble</h1>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {[
-          { label: 'Clients', val: users.length, icon: Users, color: 'bg-blue-50 text-[var(--blue)]' },
-          { label: 'Masse (EUR)', val: fmt(totalBalance), icon: TrendingUp, color: 'bg-blue-50 text-[var(--blue)]' },
-          { label: 'IBAN attente', val: pendingIban, icon: Globe, color: pendingIban ? 'bg-amber-50 text-amber-700' : 'bg-[var(--bg)]' },
-          { label: 'Activations', val: pendingActivations, icon: User, color: pendingActivations ? 'bg-red-50 text-red-600' : 'bg-[var(--bg)]' },
-        ].map((s, i) => {
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div>
+          <h1 className="text-[20px] font-bold tracking-tight">Vue d'ensemble</h1>
+          <p className="text-[12px] text-[var(--text-3)]">Pilotez l'activité NEOBANK et les demandes en cours.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {totalPending > 0 && (
+            <button onClick={() => setTab(pendingActivations ? 'withdrawal-requests' : 'iban')}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-[11px] font-semibold hover:bg-amber-100 transition">
+              <AlertTriangle className="w-3.5 h-3.5" /> {totalPending} action{totalPending > 1 ? 's' : ''} à traiter
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* KPI cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {stats.map((s) => {
           const Icon = s.icon;
           return (
-            <div key={i} className="card p-3 sm:p-4">
-              <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center mb-2 sm:mb-3 ${s.color}`}>
-                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <button key={s.label} onClick={() => setTab(s.target)}
+              className="card p-4 text-left hover:shadow-md hover:-translate-y-0.5 transition duration-200 group">
+              <div className="flex items-center justify-between">
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${s.color}`}>
+                  <Icon className="w-4.5 h-4.5" />
+                </div>
+                <span className="text-[11px] text-[var(--text-3)] group-hover:text-[var(--blue)] transition">Voir ›</span>
               </div>
-              <p className="text-[10px] sm:text-[11px] text-[var(--text-3)]">{s.label}</p>
-              <p className="text-[14px] sm:text-[18px] font-semibold font-mono mt-0.5">{s.val}</p>
-            </div>
+              <p className="mt-3 text-[18px] sm:text-[20px] font-semibold font-mono leading-none">{s.value}</p>
+              <p className="mt-1.5 text-[12px] font-medium text-[var(--text-2)]">{s.label}</p>
+              <p className="text-[10.5px] text-[var(--text-3)]">{s.sub}</p>
+            </button>
           );
         })}
       </div>
-      {(pendingIban + pendingCards + pendingAccounts + pendingKyc + pendingActivations) > 0 && (
-        <div className="badge-amber p-3 sm:p-4 flex flex-col sm:flex-row items-start sm:items-center gap-2">
-          <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
-          <span className="text-[11px] sm:text-[13px] flex-1">Actions en attente — utilisez les onglets.</span>
-          {pendingActivations > 0 && <button type="button" onClick={() => setTab('withdrawal-requests')} className="text-[11px] font-semibold underline whitespace-nowrap">Voir les activations</button>}
-          {pendingIban > 0 && <button type="button" onClick={() => setTab('iban')} className="text-[11px] font-semibold underline whitespace-nowrap">Voir les demandes IBAN</button>}
-          {pendingKyc > 0 && <button type="button" onClick={() => setTab('kyc')} className="text-[11px] font-semibold underline whitespace-nowrap">Voir les KYC</button>}
+
+      {/* Transfer overview */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="card p-4 lg:col-span-2">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h2 className="text-[14px] font-semibold">Flux des virements</h2>
+              <p className="text-[11px] text-[var(--text-3)]">Répartition par statut</p>
+            </div>
+            {transferCount('pending') + transferCount('pending_confirmation') + transferCount('verifying') > 0 && (
+              <button onClick={() => setTab('transfers')} className="text-[11px] font-semibold text-[var(--blue)] hover:underline">
+                Traiter les virements ›
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {transferStats.map((t) => (
+              <button key={t.key} onClick={() => setTab('transfers')}
+                className="rounded-xl p-3 bg-[var(--bg)] hover:ring-1 hover:ring-[var(--blue)]/30 transition text-left">
+                <p className={`text-[20px] font-semibold font-mono ${t.color.split(' ')[1]}`}>{transferCount(t.key)}</p>
+                <p className="mt-1 text-[10.5px] font-medium text-[var(--text-3)]">{t.label}</p>
+              </button>
+            ))}
+          </div>
         </div>
-      )}
+
+        {/* Pending requests quick access */}
+        <div className="card p-4">
+          <h2 className="text-[14px] font-semibold mb-3">Demandes en attente</h2>
+          <div className="space-y-2">
+            {[
+              { label: 'Activations de retrait', val: pendingActivations, target: 'withdrawal-requests', color: pendingActivations ? 'text-red-600' : 'text-[var(--text-3)]' },
+              { label: 'Demandes IBAN', val: pendingIban, target: 'iban', color: pendingIban ? 'text-amber-600' : 'text-[var(--text-3)]' },
+              { label: 'KYC à valider', val: pendingKyc, target: 'kyc', color: pendingKyc ? 'text-amber-600' : 'text-[var(--text-3)]' },
+              { label: 'Comptes à valider', val: pendingAccounts, target: 'clients', color: pendingAccounts ? 'text-amber-600' : 'text-[var(--text-3)]' },
+            ].map((r) => (
+              <button key={r.label} onClick={() => setTab(r.target)}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-lg bg-[var(--bg)] hover:bg-[var(--bg)]/70 transition">
+                <span className="text-[12px] text-[var(--text-2)]">{r.label}</span>
+                <span className={`font-mono text-[13px] font-semibold ${r.color}`}>{r.val}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
