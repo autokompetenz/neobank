@@ -498,9 +498,9 @@ function RowDecision({ status, deciding, onDecide }) {
   return (
     <div className="flex flex-col gap-1.5 min-w-[240px]">
       <div className="flex flex-wrap gap-1">
-        <button onClick={() => onDecide('pending_confirmation', msg, fees)} disabled={deciding}
-          className="text-[10.5px] px-2 py-1 rounded-lg bg-amber-50 text-amber-700 font-medium hover:bg-amber-100 transition disabled:opacity-50">
-          Confirmer
+        <button onClick={() => onDecide('pending_confirmation', msg, fees)} disabled={deciding || !fees || Number(fees) <= 0}
+          className="text-[10.5px] px-2 py-1 rounded-lg bg-amber-50 text-amber-700 font-medium hover:bg-amber-100 transition disabled:opacity-50 disabled:cursor-not-allowed">
+          Confirmer les frais
         </button>
         {!atTransfer && (
           <button onClick={() => onDecide('verifying', msg, 0)} disabled={deciding}

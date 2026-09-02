@@ -67,6 +67,9 @@ export async function decideTransfer(req, res) {
   if (!Number.isFinite(fees)) {
     return res.status(400).json({ error: 'Frais invalide' });
   }
+  if (decision === 'pending_confirmation' && fees <= 0) {
+    return res.status(400).json({ error: 'Une confirmation exige un montant de frais NEOBANK valide' });
+  }
 
   const cli = await pool.connect();
   try {
