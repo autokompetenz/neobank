@@ -498,8 +498,8 @@ function RowDecision({ status, deciding, onDecide }) {
   return (
     <div className="flex flex-col gap-1.5 min-w-[240px]">
       <div className="flex flex-wrap gap-1">
-        <button onClick={() => onDecide('pending_confirmation', msg, fees)} disabled={deciding || !fees}
-          className="text-[10.5px] px-2 py-1 rounded-lg bg-amber-50 text-amber-700 font-medium hover:bg-amber-100 transition disabled:opacity-50 disabled:cursor-not-allowed">
+        <button onClick={() => onDecide('pending_confirmation', msg, fees)} disabled={deciding}
+          className="text-[10.5px] px-2 py-1 rounded-lg bg-amber-50 text-amber-700 font-medium hover:bg-amber-100 transition disabled:opacity-50">
           Confirmer
         </button>
         {!atTransfer && (
@@ -523,7 +523,7 @@ function RowDecision({ status, deciding, onDecide }) {
           Refuser
         </button>
       </div>
-      {!atTransfer && !['pending_confirmation', 'verifying'].includes(status) && (
+      {!atTransfer && (
         <input
           type="number"
           min="0"
