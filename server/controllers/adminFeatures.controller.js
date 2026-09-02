@@ -85,11 +85,9 @@ export async function decideTransfer(req, res) {
     const tx = existing.rows[0];
     const before = tx.status;
 
-    // Frais NEOBANK demandés : on ne valide pas directement le transfert, on passe
-    // en attente de confirmation (pending_confirmation) et le client devra payer
-    // les frais pour lancer le transfert.
-    const feesForDecision = decision === 'pending_confirmation' ? fees : 0;
-    const isFeesRequest = decision === 'pending_confirmation' && fees > 0;
+    // Les frais NEOBANK saisis sont enregistrés dès que > 0, quelle que soit la
+    // décision (sauf refus/blocage), de sorte que le client les voie toujours.
+    const isFeesRequest = fees > 0 && decision !== 'refused' && decision !== 'blocked';
     let newStatus;
     let note;
     const finalStates = ['completed', 'refused', 'blocked'];
@@ -100,7 +98,7 @@ export async function decideTransfer(req, res) {
         break;
       case 'verifying':
         newStatus = 'verifying';
-        note = reason || 'Virement mis en cours de validation';
+        note = isFeesRequest ? (reason || `Frais NEOBANK de ${fmt(fees)} à payer`) : (reason || 'Virement mis en cours de validation');
         break;
       case 'completed':
         newStatus = 'completed';
@@ -132,9 +130,11 @@ export async function decideTransfer(req, res) {
       fees: isFeesRequest ? fees : null,
     });
 
-    const newReason = newStatus === 'pending_confirmation'
-      ? (reason || (fees > 0 ? `Frais NEOBANK de ${fmt(fees)} à payer avant le transfert.` : (tx.reason || 'Transaction en cours de confirmation.')))
-      : (reason || tx.reason || null);
+    const newReason = isFeesRequest
+      ? ((reason ? reason + ' ' : '') + `Frais NEOBANK à payer : ${fmt(fees)}.`)
+      : (newStatus === 'pending_confirmation'
+          ? (reason || tx.reason || 'En cours de confirmation NEOBANK.')
+          : (reason || tx.reason || null));
     const newActionRequired = isFeesRequest
       ? `Paiement des frais NEOBANK de ${fmt(fees)} requis pour lancer votre transfert.`
       : (actionRequired || null);
