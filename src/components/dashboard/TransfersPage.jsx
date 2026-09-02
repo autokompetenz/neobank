@@ -60,7 +60,8 @@ function BlockedReasonModal({ transfer, onClose, onConfirmed }) {
   };
 
   const canPayFees = ['pending_confirmation', 'verifying'].includes(transfer.status);
-  const hasFees = Number(transfer.fees || 0) > 0 && canPayFees;
+  const hasFees = Number(transfer.fees || 0) > 0;
+  const showPay = hasFees && canPayFees;
   const blocked = transfer.status === 'blocked';
   const refused = transfer.status === 'refused';
 
@@ -107,17 +108,17 @@ function BlockedReasonModal({ transfer, onClose, onConfirmed }) {
           <div className="rounded-xl p-3 bg-[var(--bg)]">
             <p className="text-[11px] font-semibold uppercase tracking-wide mb-1 text-[var(--text-3)]">Frais NEOBANK à payer</p>
             <p className="text-[16px] font-mono font-bold text-[var(--blue)]">{fmt(transfer.fees)}</p>
-            <p className="text-[11px] text-[var(--text-3)] mt-1">Ces frais seront débités de votre solde pour libérer votre virement.</p>
+            <p className="text-[11px] text-[var(--text-3)] mt-1">{showPay ? 'Ces frais seront débités de votre solde pour lancer le transfert.' : 'Frais NEOBANK appliqués à ce virement.'}</p>
           </div>
         )}
 
-        {transfer.status === 'verifying' && !hasFees && (
+        {transfer.status === 'verifying' && !showPay && (
           <button onClick={confirmVerification} disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 py-2.5 text-[12px]">
             {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
             Compléter la validation
           </button>
         )}
-        {hasFees && (
+        {showPay && (
           <button onClick={payFees} disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 py-2.5 text-[12px]">
             {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
             Payer les frais ({fmt(transfer.fees)})
@@ -244,6 +245,9 @@ export default function TransfersPage({ account, onSuccess }) {
                     <p className="text-[13px] font-medium text-[var(--text)] truncate">{t.externalAccountHolder}</p>
                     <p className="text-[11px] text-[var(--text-3)] font-mono truncate">{t.reference} · {new Date(t.createdAt).toLocaleDateString('fr-FR')}</p>
                     {t.label && <p className="text-[11px] text-[var(--text-3)] truncate">{t.label}</p>}
+                    {Number(t.fees) > 0 && (
+                      <p className="text-[11px] font-semibold text-[var(--blue)] mt-0.5">Frais NEOBANK : {fmt(Number(t.fees))}</p>
+                    )}
                   </div>
                   <div className="flex flex-col items-end gap-1 flex-shrink-0">
                     <span className="font-mono text-[13px] font-semibold text-[var(--text)]">-{fmt(t.amount)}</span>
