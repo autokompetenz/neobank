@@ -500,7 +500,7 @@ function RowDecision({ status, deciding, onDecide }) {
       <div className="flex flex-wrap gap-1">
         <button onClick={() => onDecide('pending_confirmation', msg, fees)} disabled={deciding || !fees}
           className="text-[10.5px] px-2 py-1 rounded-lg bg-amber-50 text-amber-700 font-medium hover:bg-amber-100 transition disabled:opacity-50 disabled:cursor-not-allowed">
-          Confirmer frais
+          Confirmer
         </button>
         {!atTransfer && (
           <button onClick={() => onDecide('verifying', msg, 0)} disabled={deciding}
