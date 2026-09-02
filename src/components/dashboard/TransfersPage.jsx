@@ -157,17 +157,16 @@ export default function TransfersPage({ account, onSuccess }) {
 
   useEffect(() => { load(); }, [load]);
 
-  // Rechargement auto tant qu'un virement attend une gestion/paiement (frais).
+  // Rechargement auto : assure que les frais/messages NEOBANK imposés par l'admin
+  // apparaissent chez le client sans rafraîchissement manuel.
   useEffect(() => {
-    const active = transfers.some((t) => ['pending', 'pending_confirmation', 'verifying'].includes(t.status));
-    if (!active) return;
     const id = setInterval(() => {
       api.get('/transfers')
         .then((res) => setTransfers(res.data.transfers || []))
         .catch(() => {});
     }, 8000);
     return () => clearInterval(id);
-  }, [transfers]);
+  }, []);
 
   const selectBeneficiary = (id) => {
     const b = beneficiaries.find((x) => x.id === id);
