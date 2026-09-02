@@ -59,16 +59,9 @@ export async function listAllTransfers(req, res) {
 export async function decideTransfer(req, res) {
   const { id } = req.params;
   const { decision, reason, actionRequired } = req.body; // pending_confirmation | verifying | completed | refused | blocked
-  const fees = Number(req.body.fees);
 
   if (!['pending_confirmation', 'verifying', 'completed', 'refused', 'blocked'].includes(decision)) {
     return res.status(400).json({ error: 'Décision invalide' });
-  }
-  if (!Number.isFinite(fees)) {
-    return res.status(400).json({ error: 'Frais invalide' });
-  }
-  if (decision === 'pending_confirmation' && fees <= 0) {
-    return res.status(400).json({ error: 'Une confirmation exige un montant de frais NEOBANK valide' });
   }
 
   const cli = await pool.connect();
@@ -85,20 +78,17 @@ export async function decideTransfer(req, res) {
     const tx = existing.rows[0];
     const before = tx.status;
 
-    // Les frais NEOBANK saisis sont enregistrés dès que > 0, quelle que soit la
-    // décision (sauf refus/blocage), de sorte que le client les voie toujours.
-    const isFeesRequest = fees > 0 && decision !== 'refused' && decision !== 'blocked';
     let newStatus;
     let note;
     const finalStates = ['completed', 'refused', 'blocked'];
     switch (decision) {
       case 'pending_confirmation':
         newStatus = 'pending_confirmation';
-        note = isFeesRequest ? (reason || `Frais NEOBANK de ${fmt(fees)} à payer`) : (reason || 'En attente de confirmation NEOBANK');
+        note = reason || 'En attente de confirmation NEOBANK';
         break;
       case 'verifying':
         newStatus = 'verifying';
-        note = isFeesRequest ? (reason || `Frais NEOBANK de ${fmt(fees)} à payer`) : (reason || 'Virement mis en cours de validation');
+        note = reason || 'Virement mis en cours de validation';
         break;
       case 'completed':
         newStatus = 'completed';
@@ -127,23 +117,17 @@ export async function decideTransfer(req, res) {
       by: req.userRole || 'admin',
       note,
       reason: reason || null,
-      fees: isFeesRequest ? fees : null,
     });
 
-    const newReason = isFeesRequest
-      ? ((reason ? reason + ' ' : '') + `Frais NEOBANK à payer : ${fmt(fees)}.`)
-      : (newStatus === 'pending_confirmation'
-          ? (reason || tx.reason || 'En cours de confirmation NEOBANK.')
-          : (reason || tx.reason || null));
-    const newActionRequired = isFeesRequest
-      ? `Paiement des frais NEOBANK de ${fmt(fees)} requis pour lancer votre transfert.`
-      : (actionRequired || null);
+    // Le motif est le message saisi par l'admin (frais, le cas échéant, y figurent).
+    const newReason = reason || (newStatus === 'pending_confirmation'
+      ? (tx.reason || 'En cours de confirmation NEOBANK.')
+      : tx.reason || null);
 
     await cli.query(
-      `UPDATE transactions SET status = $1, reason = $2, action_required = $3, decision_history = $4, fees = $5
-       WHERE id = $6`,
-      [newStatus, newReason, newActionRequired,
-       JSON.stringify(history), isFeesRequest ? fees : tx.fees || 0, id],
+      `UPDATE transactions SET status = $1, reason = $2, action_required = $3, decision_history = $4
+       WHERE id = $5`,
+      [newStatus, newReason, actionRequired || null, JSON.stringify(history), id],
     );
 
     // Notification client
@@ -157,9 +141,6 @@ export async function decideTransfer(req, res) {
     } else if (newStatus === 'blocked') {
       notifTitle = 'Virement bloqué';
       notifMsg = `Votre virement de ${fmt(tx.amount)} a été bloqué. ${newReason || ''}`;
-    } else if (isFeesRequest) {
-      notifTitle = 'Frais NEOBANK demandés';
-      notifMsg = `Des frais NEOBANK de ${fmt(fees)} sont demandés pour votre virement de ${fmt(tx.amount)}. Examinez les frais pour continuer.`;
     } else {
       notifTitle = 'Virement en cours de gestion';
       notifMsg = `Votre virement de ${fmt(tx.amount)} est ${statusLabel(newStatus)}.${newReason ? ' ' + newReason : ''}`;
@@ -173,7 +154,7 @@ export async function decideTransfer(req, res) {
       entityType: 'transaction',
       entityId: id,
       oldValue: { status: before },
-      newValue: { status: newStatus, fees: isFeesRequest ? fees : null, reason: newReason || null },
+      newValue: { status: newStatus, reason: newReason || null },
       meta: { amount: Number(tx.amount), clientId: tx.user_id },
     });
 

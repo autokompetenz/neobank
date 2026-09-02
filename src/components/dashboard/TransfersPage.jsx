@@ -43,25 +43,7 @@ function BlockedReasonModal({ transfer, onClose, onConfirmed }) {
     } finally {
       setLoading(false);
     }
-  };
-
-  const payFees = async () => {
-    setLoading(true);
-    try {
-      await api.post(`/transfers/${transfer.id}/pay-fees`);
-      toast.success('Frais NEOBANK payés. Virement en cours de transfert !');
-      onConfirmed?.();
-      onClose();
-    } catch (e) {
-      toast.error(e.response?.data?.error || 'Erreur');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const canPayFees = ['pending_confirmation', 'verifying'].includes(transfer.status);
-  const hasFees = Number(transfer.fees || 0) > 0;
-  const showPay = hasFees && canPayFees;
+  }
   const blocked = transfer.status === 'blocked';
   const refused = transfer.status === 'refused';
 
@@ -104,16 +86,10 @@ function BlockedReasonModal({ transfer, onClose, onConfirmed }) {
           </div>
         )}
 
-        {transfer.status === 'verifying' && !showPay && (
+        {transfer.status === 'verifying' && (
           <button onClick={confirmVerification} disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 py-2.5 text-[12px]">
             {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
             Compléter la validation
-          </button>
-        )}
-        {showPay && (
-          <button onClick={payFees} disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 py-2.5 text-[12px]">
-            {loading ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-            Payer les frais ({fmt(transfer.fees)})
           </button>
         )}
         {blocked && (
@@ -237,20 +213,12 @@ export default function TransfersPage({ account, onSuccess }) {
                     <p className="text-[13px] font-medium text-[var(--text)] truncate">{t.externalAccountHolder}</p>
                     <p className="text-[11px] text-[var(--text-3)] font-mono truncate">{t.reference} · {new Date(t.createdAt).toLocaleDateString('fr-FR')}</p>
                     {t.label && <p className="text-[11px] text-[var(--text-3)] truncate">{t.label}</p>}
-                    {Number(t.fees) > 0 && (
-                      <p className="text-[11px] font-semibold text-[var(--blue)] mt-0.5">Frais NEOBANK : {fmt(Number(t.fees))}</p>
-                    )}
                   </div>
                   <div className="flex flex-col items-end gap-1 flex-shrink-0">
                     <span className="font-mono text-[13px] font-semibold text-[var(--text)]">-{fmt(t.amount)}</span>
                     <span className={`text-[10.5px] px-2 py-0.5 rounded-full font-medium ${STATUS_STYLES[t.status] || 'badge-amber'}`}>
                       {STATUS_LABELS[t.status] || t.status}
                     </span>
-                    {Number(t.fees) > 0 && ['pending_confirmation', 'verifying'].includes(t.status) && (
-                      <span className="text-[10.5px] px-2 py-0.5 rounded-full font-semibold text-[var(--blue)] bg-[var(--blue-bg)]">
-                        Frais à payer : {fmt(Number(t.fees))}
-                      </span>
-                    )}
                     {OPENABLE.includes(t.status) && (
                       <span className="text-[10.5px] text-[var(--blue)] font-medium flex items-center gap-0.5">
                         <ShieldAlert className="w-3 h-3" /> Voir le détail

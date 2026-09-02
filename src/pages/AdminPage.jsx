@@ -491,49 +491,31 @@ const STATUS_STYLES_ADMIN = {
 
 function RowDecision({ status, deciding, onDecide }) {
   const [msg, setMsg] = useState('');
-  const [fees, setFees] = useState('');
-
-  const atTransfer = status === 'transferring';
 
   return (
     <div className="flex flex-col gap-1.5 min-w-[240px]">
       <div className="flex flex-wrap gap-1">
-        <button onClick={() => onDecide('pending_confirmation', msg, fees)} disabled={deciding || !fees || Number(fees) <= 0}
-          className="text-[10.5px] px-2 py-1 rounded-lg bg-amber-50 text-amber-700 font-medium hover:bg-amber-100 transition disabled:opacity-50 disabled:cursor-not-allowed">
+        <button onClick={() => onDecide('pending_confirmation', msg)} disabled={deciding}
+          className="text-[10.5px] px-2 py-1 rounded-lg bg-amber-50 text-amber-700 font-medium hover:bg-amber-100 transition disabled:opacity-50">
           Confirmer
         </button>
-        {!atTransfer && (
-          <button onClick={() => onDecide('verifying', msg, 0)} disabled={deciding}
-            className="text-[10.5px] px-2 py-1 rounded-lg bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition disabled:opacity-50">
-            En validation
-          </button>
-        )}
-        {atTransfer && (
-          <button onClick={() => onDecide('completed', msg, 0)} disabled={deciding}
-            className="text-[10.5px] px-2 py-1 rounded-lg bg-green-50 text-green-700 font-medium hover:bg-green-100 transition disabled:opacity-50">
-            Marquer effectué
-          </button>
-        )}
-        <button onClick={() => onDecide('blocked', msg, 0)} disabled={deciding}
+        <button onClick={() => onDecide('verifying', msg)} disabled={deciding}
+          className="text-[10.5px] px-2 py-1 rounded-lg bg-blue-50 text-blue-700 font-medium hover:bg-blue-100 transition disabled:opacity-50">
+          En validation
+        </button>
+        <button onClick={() => onDecide('completed', msg)} disabled={deciding}
+          className="text-[10.5px] px-2 py-1 rounded-lg bg-green-50 text-green-700 font-medium hover:bg-green-100 transition disabled:opacity-50">
+          Marquer effectué
+        </button>
+        <button onClick={() => onDecide('blocked', msg)} disabled={deciding}
           className="text-[10.5px] px-2 py-1 rounded-lg bg-orange-50 text-orange-700 font-medium hover:bg-orange-100 transition disabled:opacity-50">
           Bloquer
         </button>
-        <button onClick={() => onDecide('refused', msg, 0)} disabled={deciding}
+        <button onClick={() => onDecide('refused', msg)} disabled={deciding}
           className="text-[10.5px] px-2 py-1 rounded-lg bg-red-50 text-red-600 font-medium hover:bg-red-100 transition disabled:opacity-50">
           Refuser
         </button>
       </div>
-      {!atTransfer && (
-        <input
-          type="number"
-          min="0"
-          step="0.01"
-          value={fees}
-          onChange={(e) => setFees(e.target.value)}
-          placeholder="Frais NEOBANK (€)..."
-          className="input-base text-[11px] py-1.5 min-h-[34px]"
-        />
-      )}
       <input
         type="text"
         value={msg}
@@ -550,12 +532,12 @@ function TabTransfers({ allTransfers, loadTransfers }) {
   const [statusFilter, setStatusFilter] = useState('');
   const [deciding, setDeciding] = useState(null);
 
-  const decide = async (id, decision, reason = '', fees = '') => {
+  const decide = async (id, decision, reason = '') => {
     setDeciding(id);
     try {
-      await api.post(`/admin/transfers/${id}/decide`, { decision, reason, fees: Number(fees) || 0 });
+      await api.post(`/admin/transfers/${id}/decide`, { decision, reason });
       if (decision === 'pending_confirmation') {
-        toast.success(Number(fees) > 0 ? 'Frais NEOBANK confirmés. Le client devra payer pour lancer le transfert.' : 'Virement passé en confirmation.');
+        toast.success('Virement passé en confirmation.');
       } else if (decision === 'completed') {
         toast.success('Transfert marqué comme effectué.');
       } else if (decision === 'blocked') {
