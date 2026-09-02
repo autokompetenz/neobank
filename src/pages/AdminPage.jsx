@@ -635,9 +635,6 @@ function TabTransfers({ allTransfers, loadTransfers }) {
                   <td className="p-3"><Chip color={STATUS_STYLES_ADMIN[t.status]?.replace('badge-', '') || 'gray'}>{t.statusLabel}</Chip></td>
                   <td className="p-3 text-[11px] text-[var(--text-2)] max-w-[180px] truncate">
                     {t.reason || '—'}
-                    {Number(t.fees) > 0 && (
-                      <span className="block mt-1 font-mono font-semibold text-[var(--blue)]">Frais NEØBANK: {fmt(Number(t.fees))}</span>
-                    )}
                   </td>
                   <td className="p-3 text-right font-mono font-medium">{fmt(t.amount)}</td>
                   <td className="p-3">
