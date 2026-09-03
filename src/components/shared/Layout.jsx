@@ -5,7 +5,7 @@ import Footer from './Footer'
 
 export default function Layout({ children }) {
   const { pathname } = useLocation()
-  const isBank = pathname.startsWith('/banque')
+  const isBank = pathname.startsWith('/banque') || pathname.startsWith('/dashboard') || pathname.startsWith('/admin')
 
   return (
     <>
@@ -22,9 +22,9 @@ export default function Layout({ children }) {
         </motion.main>
       </AnimatePresence>
       {!isBank && <Footer />}
-      {!isBank && pathname !== '/emprunter' && (
-        <Link to="/emprunter" className="btn-floating-demande">
-          Fai richiesta
+      {!isBank && pathname !== '/simulateur' && pathname !== '/register' && pathname !== '/login' && (
+        <Link to="/simulateur" className="btn-floating-demande">
+          Évaluer mon projet
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="9 18 15 12 9 6" /></svg>
         </Link>
       )}

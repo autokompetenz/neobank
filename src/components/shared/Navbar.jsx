@@ -2,23 +2,25 @@ import { useState, useEffect, useRef } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 
-const pretTypes = [
-  { to: '/prets/personnel', label: 'Personale' },
-  { to: '/prets/urgence', label: 'Emergenza' },
-  { to: '/prets/etudiant', label: 'Studentesco' },
-  { to: '/prets/professionnel', label: 'Professionale' },
-  { to: '/prets/travaux', label: 'Lavori' },
-  { to: '/prets/consolidation', label: 'Consolidamento' },
-  { to: '/prets/ptz', label: 'PTZ 0%' },
-  { to: '/prets/p2p', label: 'P2P' },
+const projectTypes = [
+  { to: '/projets/immobilier', label: 'Immobilier' },
+  { to: '/projets/automobile', label: 'Automobile' },
+  { to: '/projets/entreprise', label: 'Création d\'entreprise' },
+  { to: '/projets/etudes', label: 'Études' },
+  { to: '/projets/construction', label: 'Construction' },
+  { to: '/projets/travaux', label: 'Travaux' },
+  { to: '/projets/international', label: 'Projet international' },
+  { to: '/projets/personnel', label: 'Projet personnel' },
 ]
 
 const links = [
-  { to: '/emprunter', label: 'Richiedere' },
-  { to: '/preter', label: 'Investire' },
-  { to: '/profils-acceptes', label: 'Prestiti', dropdown: pretTypes },
-  { to: '/comment-ca-marche', label: 'Come funziona' },
+  { to: '/', label: 'Accueil' },
+  { to: '/solutions', label: 'Nos solutions' },
+  { to: '/projets', label: 'Catégories de projets', dropdown: projectTypes },
+  { to: '/simulateur', label: 'Simulateur' },
+  { to: '/comment-ca-marche', label: 'Comment ça marche' },
   { to: '/faq', label: 'FAQ' },
+  { to: '/contact', label: 'Contact' },
 ]
 
 export default function Navbar() {
@@ -46,15 +48,15 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  const isActive = (to) => pathname === to || (to === '/profils-acceptes' && pathname.startsWith('/prets/'))
+  const isActive = (to) => pathname === to
 
   return (
     <>
       <nav className={`navbar${scrolled ? ' scrolled' : ''}`}>
         <div className="container">
           <Link to="/" className="navbar-brand">
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: 16 }}>P</div>
-            <span style={{ fontWeight: 800, fontSize: 18, marginLeft: 10, letterSpacing: '-.03em', color: 'var(--text)' }}>PRESTITER</span>
+            <div style={{ width: 36, height: 36, borderRadius: 10, background: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: 13 }}>N</div>
+            <span style={{ fontWeight: 800, fontSize: 18, marginLeft: 10, letterSpacing: '-.03em', color: 'var(--text)' }}>NEOBANK</span>
           </Link>
 
           <ul className="nav align-items-center">
@@ -77,7 +79,7 @@ export default function Navbar() {
                 </button>
                 {dropdownOpen && (
                   <div className="nav-dropdown-menu">
-                    {pretTypes.map(p => (
+                    {projectTypes.map(p => (
                       <Link key={p.to} to={p.to} className="nav-dropdown-link" style={{ color: pathname === p.to ? 'var(--blue)' : 'var(--text-2)' }}>
                         {p.label}
                       </Link>
@@ -90,12 +92,12 @@ export default function Navbar() {
                 <Link to={l.to} className={`nav-link${pathname === l.to ? ' active' : ''}`}>{l.label}</Link>
               </li>
             ))}
-            {user && (
+            {user ? (
               <>
                 <li className="nav-account-btn">
                   <Link to={user.role === 'admin' ? '/admin' : '/dashboard'} className="btn btn-ghost" style={{ fontSize: 13 }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-                    Area personale
+                    Mon espace
                   </Link>
                 </li>
                 <li className="nav-account-btn">
@@ -109,6 +111,12 @@ export default function Navbar() {
                   </button>
                 </li>
               </>
+            ) : (
+              <li className="nav-account-btn">
+                <Link to="/register" className="btn btn-primary" style={{ fontSize: 13 }}>
+                  Démarrer mon projet
+                </Link>
+              </li>
             )}
           </ul>
 
@@ -124,8 +132,8 @@ export default function Navbar() {
         <div className="mobile-menu">
           <div className="mobile-menu-header">
             <Link to="/" onClick={() => setOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: 14 }}>P</div>
-              <span style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>PRESTITER</span>
+              <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: 12 }}>N</div>
+              <span style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>NEOBANK</span>
             </Link>
             <button className="navbar-toggler" onClick={() => setOpen(false)} aria-label="Fermer">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -140,29 +148,33 @@ export default function Navbar() {
               </li>
             ))}
             <li>
-              <Link to="/profils-acceptes" className={`nav-link${pathname === '/profils-acceptes' || pathname.startsWith('/prets/') ? ' active' : ''}`} onClick={() => setOpen(false)}>
-                Tutti i prestiti
+              <Link to="/projets" className={`nav-link${pathname === '/projets' || pathname.startsWith('/projets/') ? ' active' : ''}`} onClick={() => setOpen(false)}>
+                Toutes les catégories
               </Link>
               <div className="mobile-submenu">
-                {pretTypes.map(p => (
+                {projectTypes.map(p => (
                   <Link key={p.to} to={p.to} className={`nav-link-small${pathname === p.to ? ' active' : ''}`} onClick={() => setOpen(false)}>{p.label}</Link>
                 ))}
               </div>
             </li>
             <li style={{ marginTop: 8, width: '100%' }}>
-              <Link to="/emprunter" className="btn btn-secondary w-100" style={{ justifyContent: 'center' }} onClick={() => setOpen(false)}>
-                Fai richiesta di prestito
+              <Link to="/simulateur" className="btn btn-secondary w-100" style={{ justifyContent: 'center' }} onClick={() => setOpen(false)}>
+                Évaluer mon projet
               </Link>
             </li>
             <li style={{ marginTop: 8, width: '100%' }}>
-              {user && (
+              {user ? (
                 <Link to={user.role === 'admin' ? '/admin' : '/dashboard'} className="btn btn-primary w-100" style={{ justifyContent: 'center' }} onClick={() => setOpen(false)}>
-                  Area personale
+                  Mon espace
+                </Link>
+              ) : (
+                <Link to="/register" className="btn btn-primary w-100" style={{ justifyContent: 'center' }} onClick={() => setOpen(false)}>
+                  Démarrer mon projet
                 </Link>
               )}
             </li>
-            <li style={{ marginTop: 8, width: '100%' }}>
-              {user && (
+            {user && (
+              <li style={{ marginTop: 8, width: '100%' }}>
                 <button
                   onClick={() => { logout(); navigate('/'); setOpen(false); }}
                   className="btn btn-ghost w-100"
@@ -170,8 +182,8 @@ export default function Navbar() {
                 >
                   Déconnexion
                 </button>
-              )}
-            </li>
+              </li>
+            )}
           </ul>
         </div>
       )}

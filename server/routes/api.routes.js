@@ -11,6 +11,7 @@ import * as adminFeaturesCtl from '../controllers/adminFeatures.controller.js';
 import { authMiddleware } from '../middlewares/auth.js';
 import { adminMiddleware } from '../middlewares/admin.js';
 import { requireAdminScope } from '../middlewares/adminRoles.js';
+import * as projectsCtl from '../controllers/projects.controller.js';
 
 const router = Router();
 
@@ -109,5 +110,18 @@ router.get('/admin/audit-logs', authMiddleware, adminMiddleware, requireAdminSco
 // Rôles administratifs (superadmin uniquement)
 router.get('/admin/admins', authMiddleware, adminMiddleware, requireAdminScope(['superadmin']), adminFeaturesCtl.listAdminUsers);
 router.post('/admin/admins/:id/role', authMiddleware, adminMiddleware, requireAdminScope(['superadmin']), adminFeaturesCtl.setAdminRole);
+
+// Projets / dossier d'orientation (clients)
+router.post('/projects', authMiddleware, projectsCtl.submitApplication);
+router.get('/projects', authMiddleware, projectsCtl.getMyApplications);
+router.get('/projects/:id', authMiddleware, projectsCtl.getApplication);
+router.post('/projects/:id/documents', authMiddleware, projectsCtl.addDocument);
+router.get('/projects/:id/documents', authMiddleware, projectsCtl.listDocuments);
+router.post('/projects/:id/messages', authMiddleware, projectsCtl.sendMessage);
+router.post('/projects/:id/messages/read', authMiddleware, projectsCtl.markMessagesRead);
+
+// Projets / dossier d'orientation (admin)
+router.get('/admin/projects', authMiddleware, adminMiddleware, requireAdminScope(['compliance', 'finance', 'support']), projectsCtl.listAllApplications);
+router.post('/admin/projects/:id/decide', authMiddleware, adminMiddleware, requireAdminScope(['compliance']), projectsCtl.decideApplication);
 
 export default router;

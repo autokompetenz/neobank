@@ -356,6 +356,48 @@ BEGIN
     END IF;
 END $$;
 
+-- NOVA / NEOBANK Projets : plateforme d'accompagnement et d'orientation financière
+-- (transparence : la présentation d'une demande ne garantit pas l'obtention d'un financement)
+CREATE TABLE IF NOT EXISTS applications (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  project_type TEXT NOT NULL,
+  amount NUMERIC(14,2),
+  monthly_income NUMERIC(14,2),
+  employment_status TEXT DEFAULT '',
+  country TEXT DEFAULT '',
+  full_name TEXT DEFAULT '',
+  phone TEXT DEFAULT '',
+  resume JSONB DEFAULT '{}'::jsonb,
+  status TEXT NOT NULL DEFAULT 'nouveau'
+    CHECK (status IN ('nouveau','en_analyse','informations_requises','documents_recus','en_cours','termine','refuse')),
+  advisor_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  internal_notes JSONB DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS application_documents (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  application_id UUID REFERENCES applications(id) ON DELETE CASCADE,
+  uploader_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  filename TEXT NOT NULL,
+  mimetype TEXT DEFAULT '',
+  size INTEGER DEFAULT 0,
+  url TEXT DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'en_attente'
+    CHECK (status IN ('en_attente','recu','en_vérification','valide','a_remplacer')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS application_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  application_id UUID REFERENCES applications(id) ON DELETE CASCADE,
+  sender_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  sender_role TEXT DEFAULT 'client',
+  message TEXT NOT NULL,
+  is_read BOOLEAN NOT NULL DEFAULT false,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- 6) Flux IBAN : autoriser 'pending_proof', updated_at sur iban_requests,
 --    et step 'iban_proof' + amount 0 sur account_activation_requests
 DO $$

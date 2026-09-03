@@ -1,0 +1,624 @@
+Tu es un développeur senior spécialisé en FinTech, UX/UI et applications web modernes.
+
+Je veux que tu me construises une plateforme web complète d’accompagnement et d’orientation financière, inspirée de l’ergonomie d’un site FinTech professionnel comme celui-ci :
+
+https://latuf-eurofinance.site/
+
+⚠️ IMPORTANT :
+Je veux reprendre les PRINCIPES D’ERGONOMIE et le niveau de professionnalisme du site de référence, mais créer une identité graphique, un nom, des textes et des composants originaux. Ne copie pas son logo, ses images, ses textes, son code ou sa marque.
+
+Le site doit être beaucoup plus moderne, rapide, crédible et professionnel.
+
+==================================================
+
+1. IDENTITÉ DU PROJET
+    ==================================================
+
+Nom provisoire :
+« NOVA FINANCE »
+
+Slogan :
+« Transformez vos projets en opportunités. »
+
+Positionnement :
+Plateforme numérique d’accompagnement, d’orientation et de mise en relation autour des projets personnels et professionnels.
+
+IMPORTANT :
+NOVA FINANCE ne doit pas se présenter comme une banque si elle ne possède pas réellement le statut correspondant.
+
+Ne jamais inventer :
+
+* agrément bancaire
+* licence financière
+* SIREN
+* SIRET
+* numéro ORIAS
+* numéro REGAFI
+* partenariat bancaire
+* autorisation gouvernementale
+
+Créer dans le code des variables faciles à modifier pour remplacer ces informations lorsqu’elles seront réellement disponibles.
+
+==================================================
+2. PAGE D’ACCUEIL
+
+Créer une landing page premium.
+
+Header fixe :
+
+Logo :
+NOVA FINANCE
+
+Menu :
+Accueil
+Nos solutions
+Simulateur
+Comment ça marche
+FAQ
+Contact
+
+Bouton :
+« Démarrer mon projet »
+
+Hero :
+
+Grand titre :
+
+« Votre projet mérite une vraie stratégie financière. »
+
+Texte :
+
+« Présentez votre projet, définissez vos besoins et découvrez les solutions d’accompagnement adaptées à votre situation. »
+
+Deux boutons :
+
+« Évaluer mon projet »
+« Découvrir nos solutions »
+
+Ajouter une illustration FinTech moderne.
+
+Sous le hero, afficher des indicateurs visuels :
+
++10 000 projets accompagnés
+98 % de satisfaction
+7 jours sur 7
+Accompagnement personnalisé
+
+⚠️ Ces chiffres doivent être facilement modifiables et ne doivent être présentés comme réels que s’ils sont vérifiés.
+
+==================================================
+3. CATÉGORIES DE PROJETS
+
+Créer de grandes cartes interactives :
+
+🏠 Immobilier
+🚗 Automobile
+💼 Création d’entreprise
+🎓 Études
+🏗️ Construction
+🔧 Travaux
+🌍 Projet international
+💰 Projet personnel
+
+Chaque carte contient :
+
+* icône
+* titre
+* description
+* bouton « Explorer »
+
+Au clic, ouvrir une page détaillée.
+
+==================================================
+4. SIMULATEUR INTELLIGENT
+
+Créer un simulateur en plusieurs étapes avec une interface très professionnelle.
+
+ÉTAPE 1 :
+Quel est votre projet ?
+
+ÉTAPE 2 :
+Quel montant souhaitez-vous ?
+
+ÉTAPE 3 :
+Quelle est votre situation professionnelle ?
+
+Options :
+
+* Salarié
+* Entrepreneur
+* Indépendant
+* Étudiant
+* Retraité
+* Autre
+
+ÉTAPE 4 :
+Quels sont vos revenus mensuels ?
+
+ÉTAPE 5 :
+Quel est votre pays de résidence ?
+
+ÉTAPE 6 :
+Informations personnelles :
+
+Nom
+Prénom
+Email
+Téléphone
+
+ÉTAPE 7 :
+Résumé de la demande.
+
+Afficher une barre de progression :
+1 → 2 → 3 → 4 → 5 → 6 → 7
+
+À la fin :
+
+« Votre projet a bien été enregistré. »
+
+Afficher clairement :
+
+« Cette simulation est indicative et ne constitue pas une promesse de crédit ou de financement. »
+
+==================================================
+5. PAGE SOLUTIONS
+
+Créer une page très complète.
+
+Sections :
+
+Financement immobilier
+Financement automobile
+Création d’entreprise
+Études
+Travaux
+Construction
+Projets professionnels
+Projets internationaux
+
+Pour chaque solution :
+
+* description
+* conditions générales
+* documents habituellement nécessaires
+* étapes
+* FAQ spécifique
+* bouton de demande
+
+==================================================
+6. ESPACE CLIENT
+
+Créer un véritable dashboard client.
+
+Après connexion :
+
+Bonjour, [Prénom]
+
+Afficher :
+
+Mon projet
+Statut
+Progression
+Documents
+Messages
+Notifications
+Profil
+Paramètres
+
+Exemple de statut :
+
+🟢 Demande reçue
+🟢 Analyse en cours
+🟡 Informations complémentaires
+⚪ Étude terminée
+
+Créer une timeline professionnelle.
+
+Le client peut :
+
+* consulter son dossier
+* envoyer des documents
+* télécharger ses documents
+* recevoir des messages
+* répondre aux demandes
+* modifier certaines informations
+* consulter l’historique
+
+==================================================
+7. UPLOAD DE DOCUMENTS
+
+Créer un système sécurisé d’envoi de fichiers.
+
+Formats :
+PDF
+JPG
+PNG
+
+Afficher :
+
+Nom du document
+Date
+Statut
+Taille
+Action
+
+Statuts :
+
+En attente
+Reçu
+En cours de vérification
+Validé
+À remplacer
+
+Prévoir une limite de taille.
+
+IMPORTANT :
+Ne jamais stocker les documents sensibles directement dans le frontend.
+
+==================================================
+8. ESPACE ADMINISTRATEUR
+
+Créer un dashboard admin professionnel.
+
+Sidebar :
+
+Dashboard
+Demandes
+Clients
+Documents
+Messages
+Notifications
+Statistiques
+Utilisateurs
+Contenus
+Paramètres
+Journal d’activité
+
+Dashboard :
+
+Nombre de demandes
+Nouvelles demandes
+Demandes en cours
+Demandes terminées
+Documents reçus
+Messages non lus
+
+Créer graphiques et statistiques.
+
+==================================================
+9. GESTION DES DOSSIERS
+
+L’administrateur peut ouvrir un dossier et voir :
+
+Informations personnelles
+Projet
+Montant demandé
+Situation professionnelle
+Documents
+Historique
+Messages
+
+Actions :
+
+Modifier statut
+Demander un document
+Envoyer un message
+Ajouter une note interne
+Attribuer le dossier à un conseiller
+
+Les notes internes doivent être invisibles pour le client.
+
+==================================================
+10. SYSTÈME DE NOTIFICATIONS
+
+Créer :
+
+Notifications client
+Notifications admin
+Emails transactionnels
+
+Exemples :
+
+« Votre dossier a été reçu. »
+
+« Un document supplémentaire est nécessaire. »
+
+« Votre dossier a été mis à jour. »
+
+Prévoir une architecture permettant plus tard l’intégration de :
+Resend / SendGrid / autre service email.
+
+==================================================
+11. AUTHENTIFICATION
+
+Créer :
+
+Inscription
+Connexion
+Déconnexion
+Mot de passe oublié
+Réinitialisation du mot de passe
+
+Séparer clairement :
+
+CLIENT
+ADMIN
+
+L’admin ne doit jamais être accessible sans authentification.
+
+Prévoir une architecture compatible avec Supabase ou Firebase.
+
+==================================================
+12. SÉCURITÉ
+
+Appliquer les bonnes pratiques :
+
+* validation frontend
+* validation backend
+* protection des routes
+* contrôle des permissions
+* sanitation des données
+* limitation des requêtes
+* protection contre injections
+* gestion sécurisée des sessions
+* aucun mot de passe stocké en clair
+* aucun secret API dans le frontend
+* variables d’environnement
+
+Ne jamais demander :
+
+* code PIN bancaire
+* mot de passe bancaire
+* code SMS bancaire
+* code de carte bancaire
+* phrase secrète crypto
+
+==================================================
+13. PAGES LÉGALES
+
+Créer :
+
+Mentions légales
+Politique de confidentialité
+CGU
+Politique de cookies
+Contact
+
+Créer également une page :
+
+« Nos partenaires »
+
+mais ne mettre aucun établissement réel tant qu’un partenariat réel n’existe pas.
+
+==================================================
+14. DESIGN
+
+Je veux une esthétique FinTech haut de gamme :
+
+* design minimaliste
+* cartes modernes
+* ombres légères
+* animations fluides
+* typographie premium
+* beaucoup d’espace
+* responsive parfait
+* mobile-first
+
+Créer une identité graphique originale.
+
+Utiliser des composants modernes :
+Cards
+Modals
+Tabs
+Dropdowns
+Progress bars
+Toast notifications
+Skeleton loading
+Charts
+Data tables
+
+==================================================
+15. PERFORMANCE
+
+Optimiser fortement :
+
+* lazy loading
+* code splitting
+* compression images
+* WebP/AVIF
+* cache
+* minimisation JS
+* SEO
+* Core Web Vitals
+
+Objectif :
+
+Page rapide même avec une connexion mobile moyenne.
+
+==================================================
+16. STACK
+
+Utiliser :
+
+Next.js
+TypeScript
+Tailwind CSS
+shadcn/ui
+Lucide Icons
+
+Architecture :
+
+app/
+components/
+lib/
+services/
+types/
+hooks/
+public/
+
+Préparer le projet pour :
+
+Supabase
+Vercel
+
+Créer un fichier :
+
+.env.example
+
+avec toutes les variables nécessaires.
+
+==================================================
+17. BASE DE DONNÉES
+
+Préparer les tables :
+
+users
+profiles
+applications
+projects
+documents
+messages
+notifications
+admin_notes
+activity_logs
+
+Créer les relations correctement.
+
+==================================================
+18. MOBILE
+
+Le site doit être exceptionnel sur téléphone.
+
+Créer :
+
+Bottom navigation pour l’espace client.
+
+Navigation mobile :
+
+Accueil
+Projet
+Documents
+Messages
+Profil
+
+==================================================
+19. ADMIN MOBILE
+
+L’admin doit également pouvoir consulter les dossiers depuis téléphone.
+
+==================================================
+20. SEO
+
+Créer :
+
+metadata
+Open Graph
+favicon
+sitemap
+robots.txt
+structured data si pertinent
+
+==================================================
+21. PAGE CONTACT
+
+Créer un formulaire :
+
+Nom
+Email
+Téléphone
+Sujet
+Message
+
+Ajouter :
+
+Email de contact configurable
+Téléphone configurable
+Adresse configurable
+
+Ne pas inventer une adresse réelle.
+
+==================================================
+22. CHAT
+
+Créer un système de messagerie intégré :
+
+Client ↔ Conseiller
+
+Fonctions :
+
+* messages
+* pièces jointes
+* notifications
+* date/heure
+* statut lu/non lu
+
+==================================================
+23. ÉTATS DES DEMANDES
+
+Créer les statuts :
+
+Nouveau
+En analyse
+Informations requises
+Documents reçus
+En cours
+Terminé
+Refusé
+
+Les statuts doivent être administrables.
+
+==================================================
+24. TRANSPARENCE
+
+Afficher clairement partout où nécessaire :
+
+« NOVA FINANCE est une plateforme d’accompagnement et d’orientation. La présentation d’une demande ne garantit pas l’obtention d’un financement. »
+
+Si des frais existent réellement, les afficher avant toute validation avec leur montant et leur nature.
+
+Ne jamais utiliser :
+
+« Paiement obligatoire pour débloquer votre argent »
+
+ou toute formulation trompeuse similaire.
+
+==================================================
+25. LIVRABLE FINAL
+
+Je veux que tu génères le PROJET COMPLET.
+
+Ne me donne pas seulement une maquette.
+
+Je veux :
+
+* tous les fichiers
+* toutes les pages
+* tous les composants
+* navigation fonctionnelle
+* formulaires fonctionnels
+* dashboard client
+* dashboard admin
+* authentification préparée
+* base de données préparée
+* système de documents préparé
+* système de notifications préparé
+* responsive
+* animations
+* SEO
+* sécurité de base
+* README complet
+
+Le projet doit pouvoir être lancé avec :
+
+npm install
+npm run dev
+
+Puis déployé sur Vercel.
+
+IMPORTANT :
+
+Avant de terminer, vérifie tous les liens, boutons, formulaires, routes et composants.
+
+Si une fonctionnalité nécessite une clé API ou une base de données externe, crée une intégration propre avec des variables d’environnement et indique exactement où les renseigner.
+
+Je veux une expérience utilisateur qui donne l’impression d’utiliser une véritable application FinTech moderne, tout en restant totalement transparente sur la nature réelle du service.
