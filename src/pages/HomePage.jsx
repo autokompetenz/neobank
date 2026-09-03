@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import {
   Target, Zap, GraduationCap, Briefcase, Home as HomeIcon, Wrench, Globe, Wallet, Check, ArrowRight,
-  Users, Clock, Star, TrendingUp, FileText, Lock, Smartphone, ShieldCheck, Banknote,
+  Users, Clock, Star, TrendingUp, FileText, Lock, Smartphone, ShieldCheck, Banknote, Building,
 } from 'lucide-react'
 import FloatingDecorations from '../components/shared/FloatingDecorations'
 import AnimatedCounter from '../components/shared/AnimatedCounter'
