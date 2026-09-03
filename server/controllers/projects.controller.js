@@ -1,6 +1,6 @@
 import { pool } from '../config/database.js';
-import { insertNotification } from './notify.js';
-import { logAudit } from './audit.js';
+import { insertNotification } from '../utils/notify.js';
+import { logAudit } from '../utils/audit.js';
 
 const STATUSES = ['nouveau', 'en_analyse', 'informations_requises', 'documents_recus', 'en_cours', 'termine', 'refuse'];
 
