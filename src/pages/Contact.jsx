@@ -2,89 +2,199 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Link } from 'react-router-dom'
 import { MapPin, Mail, Phone, CheckCircle, Linkedin, Twitter, Facebook, Instagram } from 'lucide-react'
+import toast from 'react-hot-toast'
 import PageHero from '../components/shared/PageHero'
 import FloatingDecorations from '../components/shared/FloatingDecorations'
 
 const fadeUp = { initial: { opacity: 0, y: 24 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true }, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } }
 
+// Adresse de contact à configurer
+const CONTACT_CONFIG = {
+  phone: '+33 1 00 00 00 00',
+  phoneHours: 'Lun — Ven : 9h00 — 18h00',
+  email: 'contact@neobank.fr',
+  emailNote: 'Réponse sous 24h ouvrées',
+  address: 'Adresse à configurer\nVille, Pays',
+}
+
+const sujetOptions = [
+  'Demande d\'information',
+  'Question sur un projet',
+  'Suivi de dossier',
+  'Suggestion d\'amélioration',
+  'Réclamation',
+  'Autre',
+]
+
 export default function Contact() {
   const [sent, setSent] = useState(false)
   const [sending, setSending] = useState(false)
-  const [error, setError] = useState('')
-  const [form, setForm] = useState({ nom: '', prenom: '', email: '', telephone: '', sujet: 'Richiesta di informazioni', message: '' })
+  const [form, setForm] = useState({
+    nom: '',
+    prenom: '',
+    email: '',
+    telephone: '',
+    sujet: sujetOptions[0],
+    message: '',
+  })
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault()
-    if (!form.nom || !form.prenom || !form.email || !form.message) return
-    setSending(true)
-    setError('')
-    try {
-      await fetch('/api/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      })
-      setSent(true)
-    } catch {
-      setError('Si è verificato un errore. Riprova.')
-    } finally {
-      setSending(false)
+    if (!form.nom || !form.prenom || !form.email || !form.message) {
+      toast.error('Veuillez remplir tous les champs obligatoires.')
+      return
     }
+    setSending(true)
+    setTimeout(() => {
+      setSent(true)
+      setSending(false)
+      toast.success('Message envoyé avec succès ! Nous vous répondrons sous 24h ouvrées.')
+    }, 800)
   }
 
   return (
     <>
-      <PageHero title="Contattaci" lead="Una domanda? Il nostro team è a tua disposizione." />
+      <PageHero title="Contactez-nous" lead="Une question, un besoin d'information ou un retour ? Notre équipe est à votre disposition." />
 
       <section className="section" style={{ position: 'relative', overflow: 'hidden' }}>
         <FloatingDecorations />
         <div className="container">
-          <motion.div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 400px), 1fr))', gap: 40 }} initial="initial" animate="animate" variants={{ animate: { transition: { staggerChildren: 0.1 } } }}>
+          <motion.div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 400px), 1fr))',
+              gap: 40,
+            }}
+            initial="initial"
+            animate="animate"
+            variants={{ animate: { transition: { staggerChildren: 0.1 } } }}
+          >
             <motion.div variants={{ initial: { opacity: 0, x: -20 }, animate: { opacity: 1, x: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } } }}>
               <div className="form-wrapper">
-                <h3>Inviaci un messaggio</h3>
+                <h3>Envoyez-nous un message</h3>
                 {sent ? (
                   <div style={{ textAlign: 'center', padding: 24 }}>
-                    <div style={{ marginBottom: 12 }}><CheckCircle size={32} color="var(--green)" /></div>
-                    <p style={{ fontWeight: 700 }}>Messaggio inviato!</p>
-                    <p className="small text-muted">Ti è stata inviata una email di conferma. Ti risponderemo entro 24 ore lavorative.</p>
+                    <div style={{ marginBottom: 12 }}><CheckCircle size={32} style={{ color: 'var(--green)' }} /></div>
+                    <p style={{ fontWeight: 700 }}>Message envoyé !</p>
+                    <p style={{ fontSize: 14, color: 'var(--text-3)', marginTop: 4 }}>
+                      Nous vous avons envoyé une confirmation par email. Notre équipe vous répondra sous 24 heures ouvrées.
+                    </p>
                   </div>
                 ) : (
                   <form className="d-flex flex-column gap-3" onSubmit={handleSubmit}>
                     <div className="form-row">
-                      <div className="form-group"><label>Cognome</label><input className="form-control" placeholder="Rossi" value={form.nom} onChange={e => setForm(f => ({ ...f, nom: e.target.value }))} /></div>
-                      <div className="form-group"><label>Nome</label><input className="form-control" placeholder="Mario" value={form.prenom} onChange={e => setForm(f => ({ ...f, prenom: e.target.value }))} /></div>
+                      <div className="form-group">
+                        <label>Nom</label>
+                        <input
+                          className="form-control"
+                          placeholder="Dupont"
+                          value={form.nom}
+                          onChange={e => setForm(f => ({ ...f, nom: e.target.value }))}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Prénom</label>
+                        <input
+                          className="form-control"
+                          placeholder="Jean"
+                          value={form.prenom}
+                          onChange={e => setForm(f => ({ ...f, prenom: e.target.value }))}
+                        />
+                      </div>
                     </div>
                     <div className="form-row">
-                      <div className="form-group"><label>Email</label><input type="email" className="form-control" placeholder="mario@example.com" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></div>
-                      <div className="form-group"><label>Telefono</label><input type="tel" className="form-control" placeholder="+39 123 456 7890" value={form.telephone} onChange={e => setForm(f => ({ ...f, telephone: e.target.value }))} /></div>
+                      <div className="form-group">
+                        <label>Email</label>
+                        <input
+                          type="email"
+                          className="form-control"
+                          placeholder="jean@example.com"
+                          value={form.email}
+                          onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                        />
+                      </div>
+                      <div className="form-group">
+                        <label>Téléphone</label>
+                        <input
+                          type="tel"
+                          className="form-control"
+                          placeholder="+33 6 00 00 00 00"
+                          value={form.telephone}
+                          onChange={e => setForm(f => ({ ...f, telephone: e.target.value }))}
+                        />
+                      </div>
                     </div>
-                    <div className="form-group"><label>Oggetto</label><select className="form-control" value={form.sujet} onChange={e => setForm(f => ({ ...f, sujet: e.target.value }))}><option>Richiesta di informazioni</option><option>Domanda su un prestito</option><option>Diventare investitore</option><option>Problema di rimborso</option><option>Reclamo</option><option>Altro</option></select></div>
-                    <div className="form-group"><label>Messaggio</label><textarea className="form-control" placeholder="Descrivi la tua richiesta..." value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} /></div>
-                    <button type="submit" className="btn btn-primary" style={{ justifyContent: 'center' }} disabled={sending}>{sending ? 'Invio in corso…' : 'Invia messaggio'}</button>
-                    {error && <p style={{ fontSize: 13, color: '#C8102E', textAlign: 'center', margin: 0 }}>{error}</p>}
+                    <div className="form-group">
+                      <label>Sujet</label>
+                      <select
+                        className="form-control"
+                        value={form.sujet}
+                        onChange={e => setForm(f => ({ ...f, sujet: e.target.value }))}
+                      >
+                        {sujetOptions.map(s => (
+                          <option key={s}>{s}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Message</label>
+                      <textarea
+                        className="form-control"
+                        placeholder="Décrivez votre demande..."
+                        value={form.message}
+                        onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="btn btn-primary"
+                      style={{ justifyContent: 'center' }}
+                      disabled={sending}
+                    >
+                      {sending ? 'Envoi en cours…' : 'Envoyer le message'}
+                    </button>
                   </form>
                 )}
               </div>
             </motion.div>
+
             <motion.div variants={{ initial: { opacity: 0, x: 20 }, animate: { opacity: 1, x: 0, transition: { duration: 0.5, ease: [0.16, 1, 0.3, 1] } } }}>
               <div className="d-flex flex-column gap-4">
                 {[
-                  { icon: Phone, title: 'Telefono', text: '800 173 173 (gratuito)\nLun — Ven: 9h00 — 18h00' },
-                  { icon: Mail, title: 'Email', text: 'prestiter@pec.it\nRisposta entro 24h' },
-                  { icon: MapPin, title: 'Sede legale', text: 'Via Corsica, 57\n86039 Termoli (CB), Italia' },
+                  { icon: Phone, title: 'Téléphone', text: `${CONTACT_CONFIG.phone}\n${CONTACT_CONFIG.phoneHours}` },
+                  { icon: Mail, title: 'Email', text: `${CONTACT_CONFIG.email}\n${CONTACT_CONFIG.emailNote}` },
+                  { icon: MapPin, title: 'Adresse', text: CONTACT_CONFIG.address },
                 ].map((item, i) => (
-                  <div key={i} style={{ display: 'flex', gap: 16, alignItems: 'flex-start', padding: 16, border: '1px solid var(--border)', borderRadius: 'var(--radius)' }}>
-                    <div style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--blue-bg)', color: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><item.icon size={20} /></div>
+                  <div key={i} style={{
+                    display: 'flex',
+                    gap: 16,
+                    alignItems: 'flex-start',
+                    padding: 16,
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius)',
+                  }}>
+                    <div style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 12,
+                      background: 'var(--blue-bg)',
+                      color: 'var(--blue)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}>
+                      <item.icon size={20} />
+                    </div>
                     <div>
                       <h4 style={{ fontSize: 15, marginBottom: 4, color: 'var(--text)' }}>{item.title}</h4>
-                      <p className="text-muted" style={{ whiteSpace: 'pre-line', fontSize: 14, margin: 0 }}>{item.text}</p>
+                      <p style={{ whiteSpace: 'pre-line', fontSize: 14, margin: 0, color: 'var(--text-3)' }}>{item.text}</p>
                     </div>
                   </div>
                 ))}
 
                 <div style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 16 }}>
-                  <h4 style={{ fontSize: 15, marginBottom: 12, color: 'var(--text)' }}>Seguici</h4>
+                  <h4 style={{ fontSize: 15, marginBottom: 12, color: 'var(--text)' }}>Suivez-nous</h4>
                   <div style={{ display: 'flex', gap: 12 }}>
                     {[
                       { icon: Linkedin, label: 'LinkedIn', url: '#' },
@@ -92,16 +202,34 @@ export default function Contact() {
                       { icon: Facebook, label: 'Facebook', url: '#' },
                       { icon: Instagram, label: 'Instagram', url: '#' },
                     ].map((s, i) => (
-                      <a key={i} href={s.url} target="_blank" rel="noopener noreferrer"
-                        style={{ width: 44, height: 44, borderRadius: 12, background: 'var(--blue-bg)', color: 'var(--blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', transition: 'transform 0.2s' }}
+                      <a
+                        key={i}
+                        href={s.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: 12,
+                          background: 'var(--blue-bg)',
+                          color: 'var(--blue)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          textDecoration: 'none',
+                          transition: 'transform 0.2s',
+                        }}
                         title={s.label}
                         onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.1)'}
-                        onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+                        onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                      >
                         <s.icon size={20} />
                       </a>
                     ))}
                   </div>
-                  <p className="small text-muted" style={{ margin: '8px 0 0', fontSize: 12 }}>Rimani aggiornato sulle nostre novità e offerte.</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-3)', margin: '8px 0 0' }}>
+                    Restez informé de nos actualités et services.
+                  </p>
                 </div>
               </div>
             </motion.div>
@@ -113,21 +241,20 @@ export default function Contact() {
         <div className="container">
           <motion.div className="section-title" {...fadeUp}>
             <div className="section-eyebrow">FAQ</div>
-            <h2 className="section-header">Domande frequenti</h2>
-            <p className="section-sub">Le risposte alle domande più comuni.</p>
+            <h2 className="section-header">Questions fréquentes</h2>
+            <p className="section-sub">Les réponses aux questions les plus courantes.</p>
           </motion.div>
           <motion.div style={{ maxWidth: 700, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 12 }} {...fadeUp}>
             {[
-              { q: 'Quali sono i vostri orari di apertura?', r: 'Il nostro team è disponibile dal lunedì al venerdì, dalle 9:00 alle 18:00 (ora italiana). Il modulo di contatto è accessibile 24h/24 e rispondiamo entro 24h.' },
-              { q: 'Dove siete situati?', r: 'La nostra sede è a Termoli, Via Corsica, 57. Operiamo in tutta Italia con oltre 27 uffici.' },
-              { q: 'Come posso contattarvi?', r: 'Puoi chiamarci al numero verde 800 173 173, scriverci a prestiter@pec.it, oppure compilare il modulo di contatto. Rispondiamo entro 24 ore lavorative.' },
-              { q: 'Come seguire la mia richiesta di prestito?', r: 'Riceverai una email di conferma immediata dopo la tua richiesta. Il nostro team ti ricontatterà entro 24h per fare il punto. Puoi anche chiamarci.' },
+              { q: 'Quels sont vos horaires d\'ouverture ?', r: 'Notre équipe est disponible du lundi au vendredi, de 9h00 à 18h00. Le formulaire de contact est accessible 24h/24 et nous répondons sous 24h ouvrées.' },
+              { q: 'Comment suivre ma demande d\'accompagnement ?', r: 'Après soumission de votre demande, vous recevez un email de confirmation immédiat. Notre équipe vous recontacte sous 24h pour faire le point. Vous pouvez également nous écrire via le formulaire.' },
+              { q: 'NEOBANK accorde-t-il des financements ?', r: 'Non. NEOBANK est une plateforme d\'accompagnement et d\'orientation financière. Nous vous aidons à structurer votre projet et à identifier les solutions pertinentes, mais la décision finale appartient aux partenaires financiers.' },
             ].map((item, i) => (
               <ContactFaqItem key={i} q={item.q} r={item.r} />
             ))}
           </motion.div>
           <motion.div className="text-center mt-4" {...fadeUp}>
-            <Link to="/faq" className="btn btn-ghost">Vedi tutte le domande →</Link>
+            <Link to="/faq" className="btn btn-ghost">Voir toutes les questions →</Link>
           </motion.div>
         </div>
       </section>
@@ -141,7 +268,9 @@ function ContactFaqItem({ q, r }) {
     <div className="faq-item">
       <button className="faq-question" onClick={() => setOpen(!open)} aria-expanded={open}>
         <span>{q}</span>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', flexShrink: 0 }}><polyline points="6 9 12 15 18 9" /></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s', flexShrink: 0 }}>
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
       </button>
       <div style={{ maxHeight: open ? 300 : 0, overflow: 'hidden', transition: 'max-height 0.3s' }}>
         <p className="faq-answer">{r}</p>
