@@ -123,5 +123,6 @@ router.post('/projects/:id/messages/read', authMiddleware, projectsCtl.markMessa
 // Projets / dossier d'orientation (admin)
 router.get('/admin/projects', authMiddleware, adminMiddleware, requireAdminScope(['compliance', 'finance', 'support']), projectsCtl.listAllApplications);
 router.post('/admin/projects/:id/decide', authMiddleware, adminMiddleware, requireAdminScope(['compliance']), projectsCtl.decideApplication);
+router.post('/admin/projects/:id/documents/:documentId', authMiddleware, adminMiddleware, requireAdminScope(['compliance']), projectsCtl.setDocumentStatus);
 
 export default router;

@@ -177,6 +177,30 @@ export async function markMessagesRead(req, res) {
   }
 }
 
+// Validation d'un document (admin/conseiller)
+const DOC_STATUSES = ['en_attente', 'en_vérification', 'valide', 'a_remplacer', 'recu'];
+export async function setDocumentStatus(req, res) {
+  const { id, documentId } = req.params;
+  const { status } = req.body || {};
+  if (!DOC_STATUSES.includes(status)) return res.status(400).json({ error: 'Statut de document invalide' });
+  try {
+    const r = await pool.query(
+      `UPDATE application_documents SET status = $1 WHERE id = $2 AND application_id = $3 RETURNING *`,
+      [status, documentId, id],
+    );
+    if (r.rowCount === 0) return res.status(404).json({ error: 'Document introuvable' });
+    const doc = toDocument(r.rows[0]);
+    if (status === 'a_remplacer') {
+      const app = await pool.query(`SELECT user_id FROM applications WHERE id = $1`, [id]);
+      if (app.rowCount) await insertNotification(app.rows[0].user_id, 'Document à remplacer', `Merci de nous transmettre une nouvelle version de « ${doc.filename} ».`);
+    }
+    res.json({ document: doc });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Erreur lors de la mise à jour du document' });
+  }
+}
+
 // ---- Admin ----
 export async function listAllApplications(req, res) {
   try {

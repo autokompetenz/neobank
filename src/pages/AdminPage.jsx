@@ -9,7 +9,7 @@ import {
   AlertTriangle, Search, ChevronLeft,
   Menu, X, Ban, RefreshCw, User, Plus, Minus,
   AlertCircle, Upload, Trash2, DollarSign,
-  Scale, ClipboardList, ShieldCheck
+  Scale, ClipboardList, ShieldCheck, FolderOpen
 } from 'lucide-react';
 import TabIban from '../components/admin/TabIban';
 import TabWithdrawalRequests from '../components/admin/TabWithdrawalRequests';
@@ -17,6 +17,7 @@ import TabProofValidation from '../components/admin/TabProofValidation';
 import TabKyc from '../components/admin/TabKyc';
 import TabTransactions from '../components/admin/TabTransactions';
 import ConfirmDialog from '../components/shared/ConfirmDialog';
+import TabProjects from '../components/admin/TabProjects';
 
 const fmt = (n) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n || 0);
 
@@ -41,6 +42,7 @@ function Avatar({ name = '', size = 'sm' }) {
 
 const TABS = [
   { id: 'overview', label: 'Aperçu', icon: LayoutDashboard },
+  { id: 'projects', label: 'Projets', icon: FolderOpen },
   { id: 'clients', label: 'Comptes Clients', icon: Users },
   { id: 'kyc', label: 'KYC', icon: Shield },
   { id: 'iban', label: 'IBAN', icon: Globe },
@@ -233,6 +235,7 @@ export default function AdminPage() {
           ) : (
             <>
               {tab === 'overview' && <TabOverview {...shared} allTransfers={allTransfers} totalBalance={totalBalance} pendingIban={pendingIban} pendingCards={pendingCards} pendingAccounts={pendingAccounts} pendingKyc={pendingKyc} pendingActivations={pendingActivations} />}
+              {tab === 'projects' && <TabProjects adminId={user?.id} />}
               {tab === 'clients' && <TabClients {...shared} />}
               {tab === 'kyc' && <TabKyc {...shared} />}
               {tab === 'iban' && <TabIban {...shared} />}

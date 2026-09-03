@@ -14,6 +14,7 @@ import TransfersPage from '../components/dashboard/TransfersPage.jsx';
 import BeneficiariesPage from '../components/dashboard/BeneficiariesPage.jsx';
 import ProfilePage from '../components/dashboard/ProfilePage.jsx';
 import NotificationsPanel from '../components/dashboard/NotificationsPanel';
+import ProjectsSection from '../components/dashboard/ProjectsSection.jsx';
 import { Clock, Menu, Ban, LogOut } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { DashboardSkeleton } from '../components/shared/Skeleton';
@@ -295,6 +296,8 @@ export default function DashboardPage() {
             onChanged={loadDashboard}
           />
         );
+      case 'projects':
+        return <ProjectsSection />;
       default:
         return (
           <Overview account={account} card={card} transactions={transactions} onNavigate={setActivePage} />
@@ -312,6 +315,7 @@ export default function DashboardPage() {
     profile: 'Mon profil',
     notifications: 'Notifications',
     activation: 'Activation IBAN',
+    projects: 'Mes projets',
   };
 
   return (

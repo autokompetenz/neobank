@@ -1,10 +1,9 @@
-import { LayoutDashboard, Activity, ArrowLeftRight, CreditCard, Menu } from 'lucide-react';
+import { LayoutDashboard, Activity, Folder, Target, Menu } from 'lucide-react';
 
 const tabs = [
   { id: 'overview', label: 'Accueil', icon: LayoutDashboard },
+  { id: 'projects', label: 'Projet', icon: Target },
   { id: 'transactions', label: 'Mouv.', icon: Activity },
-  { id: 'transfer', label: 'Virement', icon: ArrowLeftRight },
-  { id: 'card', label: 'Carte', icon: CreditCard },
 ];
 
 export default function MobileTabBar({ activePage, onNavigate, onOpenMenu }) {
