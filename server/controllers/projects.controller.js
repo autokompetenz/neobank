@@ -7,6 +7,7 @@ const STATUSES = ['nouveau', 'en_analyse', 'informations_requises', 'documents_r
 const toApplication = (row) => ({
   id: row.id,
   userId: row.user_id,
+  email: row.email || '',
   projectType: row.project_type,
   amount: row.amount ? Number(row.amount) : null,
   monthlyIncome: row.monthly_income ? Number(row.monthly_income) : null,
@@ -41,32 +42,70 @@ const toMessage = (row) => ({
   createdAt: row.created_at,
 });
 
-// Soumission d'une demande de projet (clients connectés)
-export async function submitApplication(req, res) {
-  const { projectType, amount, monthlyIncome, employmentStatus, country, fullName, phone, resume } = req.body || {};
-  if (!projectType) return res.status(400).json({ error: 'Type de projet requis' });
+// Soumission d'une demande de projet
+async function createApplication(userId, data, opts = {}) {
+  const { projectType, amount, monthlyIncome, employmentStatus, country, fullName, phone, email, resume } = data || {};
+  if (!projectType) {
+    const err = new Error('Type de projet requis');
+    err.status = 400;
+    throw err;
+  }
+  const r = await pool.query(
+    `INSERT INTO applications
+       (user_id, email, project_type, amount, monthly_income, employment_status, country, full_name, phone, resume, status)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'nouveau')
+     RETURNING *`,
+    [userId || null, email || '', projectType, amount || null, monthlyIncome || null, employmentStatus || '', country || '', fullName || '', phone || '', resume || {}],
+  );
+  const app = toApplication(r.rows[0]);
+  if (opts.notify && userId) {
+    await insertNotification(userId, 'Demande reçue', 'Votre projet a bien été enregistré. Notre équipe va l’analyser rapidement.');
+  }
+  await logAudit({ actorId: userId || null, actorRole: userId ? 'client' : 'guest', action: 'application_create', entityType: 'application', entityId: app.id, newValue: { projectType, amount }, meta: {} });
+  return app;
+}
+
+// Route publique : soumission sans compte (demande de simulation libre)
+export async function submitGuestApplication(req, res) {
   try {
-    const r = await pool.query(
-      `INSERT INTO applications
-         (user_id, project_type, amount, monthly_income, employment_status, country, full_name, phone, resume, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'nouveau')
-       RETURNING *`,
-      [req.userId, projectType, amount || null, monthlyIncome || null, employmentStatus || '', country || '', fullName || '', phone || '', resume || {}],
-    );
-    const app = toApplication(r.rows[0]);
-    await insertNotification(req.userId, 'Demande reçue', 'Votre projet a bien été enregistré. Notre équipe va l’analyser rapidement.');
-    await logAudit({ actorId: req.userId, actorRole: 'client', action: 'application_create', entityType: 'application', entityId: app.id, newValue: { projectType, amount }, meta: {} });
+    const app = await createApplication(null, req.body, { notify: true });
     res.status(201).json({ application: app });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ error: 'Erreur lors de la soumission' });
+    const code = e.status === 400 ? 400 : 500;
+    res.status(code).json({ error: code === 400 ? e.message : 'Erreur lors de la soumission' });
   }
+}
+
+// Soumission d'une demande de projet (clients connectés)
+export async function submitApplication(req, res) {
+  try {
+    const app = await createApplication(req.userId, req.body, { notify: true });
+    res.status(201).json({ application: app });
+  } catch (e) {
+    console.error(e);
+    const code = e.status === 400 ? 400 : 500;
+    res.status(code).json({ error: code === 400 ? e.message : 'Erreur lors de la soumission' });
+  }
+}
+
+// Rattache par email au moment de la création du compte
+export async function linkApplicationsToUser(userId, email) {
+  const mail = (email || '').trim().toLowerCase();
+  if (!userId || !mail) return 0;
+  const r = await pool.query(
+    `UPDATE applications SET user_id = $1, updated_at = now()
+     WHERE user_id IS NULL AND LOWER(COALESCE(email,'')) = $2
+     RETURNING id`,
+    [userId, mail],
+  );
+  return r.rowCount;
 }
 
 export async function getMyApplications(req, res) {
   try {
     const r = await pool.query(
-      `SELECT a.*, u.display_name AS advisor_name
+      `SELECT a.*, u.name AS advisor_name
        FROM applications a
        LEFT JOIN users u ON u.id = a.advisor_id
        WHERE a.user_id = $1
@@ -84,7 +123,7 @@ export async function getApplication(req, res) {
   const { id } = req.params;
   try {
     const r = await pool.query(
-      `SELECT a.*, u.display_name AS advisor_name
+      `SELECT a.*, u.name AS advisor_name
        FROM applications a
        LEFT JOIN users u ON u.id = a.advisor_id
        WHERE a.id = $1`,
@@ -205,8 +244,8 @@ export async function setDocumentStatus(req, res) {
 export async function listAllApplications(req, res) {
   try {
     const r = await pool.query(
-      `SELECT a.*, u.display_name AS client_name, u.email AS client_email,
-              ad.display_name AS advisor_name
+      `SELECT a.*, u.name AS client_name, u.email AS client_email,
+              ad.name AS advisor_name
        FROM applications a
        LEFT JOIN users u ON u.id = a.user_id
        LEFT JOIN users ad ON ad.id = a.advisor_id

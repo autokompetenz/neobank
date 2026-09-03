@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import { Eye, EyeOff, Shield, ArrowRight, Mail, Lock, User, CheckCircle2, XCircle } from 'lucide-react';
@@ -54,7 +54,15 @@ export default function AuthPage({ initialMode }) {
   const [showPwd2, setShowPwd2] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ email: '', password: '', confirmPassword: '', firstName: '', lastName: '' });
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const [form, setForm] = useState({
+    email: params.get('email') || '',
+    password: '',
+    confirmPassword: '',
+    firstName: params.get('firstName') || '',
+    lastName: params.get('lastName') || '',
+  });
   const { login, register, passwordRules, isAdmin, user } = useAuth();
   const navigate = useNavigate();
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));

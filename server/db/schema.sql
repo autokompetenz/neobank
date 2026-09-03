@@ -361,6 +361,7 @@ END $$;
 CREATE TABLE IF NOT EXISTS applications (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  email TEXT DEFAULT '',
   project_type TEXT NOT NULL,
   amount NUMERIC(14,2),
   monthly_income NUMERIC(14,2),
@@ -376,6 +377,12 @@ CREATE TABLE IF NOT EXISTS applications (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='applications' AND column_name='email') THEN
+    ALTER TABLE applications ADD COLUMN email TEXT DEFAULT '';
+  END IF;
+END $$;
 CREATE TABLE IF NOT EXISTS application_documents (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   application_id UUID REFERENCES applications(id) ON DELETE CASCADE,

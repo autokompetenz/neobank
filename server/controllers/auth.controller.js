@@ -3,6 +3,7 @@ import { pool } from '../config/database.js';
 import { signToken } from '../utils/token.js';
 import { toUserProfile, toAccount } from '../utils/serialize.js';
 import { sendWelcomeEmail } from '../utils/mail.js';
+import { linkApplicationsToUser } from './projects.controller.js';
 
 export async function register(req, res) {
   const { name, email, password } = req.body;
@@ -20,6 +21,12 @@ export async function register(req, res) {
     );
     const row = r.rows[0];
     const token = signToken({ sub: row.id, role: row.role });
+    // Rattache les demandes soumises sans compte (même email) au nouveau compte
+    try {
+      await linkApplicationsToUser(row.id, mail);
+    } catch (e) {
+      console.error('Link applications error', e);
+    }
     sendWelcomeEmail(mail, name.trim());
     res.status(201).json({
       token,

@@ -68,8 +68,7 @@ export default function SimulatorPage() {
   const handleNext = () => { if (canNext() && step < totalSteps) setStep(step + 1) }
   const handlePrev = () => { if (step > 1) setStep(step - 1) }
 
-  const handleSubmit = async () => {
-    setSubmitting(true)
+  const submitApplication = async () => {
     const fullName = `${form.firstName.trim()} ${form.lastName.trim()}`
     const payload = {
       projectType: form.projectType,
@@ -78,26 +77,28 @@ export default function SimulatorPage() {
       employmentStatus: form.employmentStatus,
       country: form.country.trim(),
       fullName,
+      email: form.email.trim(),
       phone: form.phone.trim(),
       resume: {
         step,
         summary: `Projet ${form.projectType} — ${formatCurrency(form.amount)} — ${form.employmentStatus} — ${form.country}`,
       },
     }
+    const url = user ? '/projects' : '/projects/guest'
+    await api.post(url, payload)
+  }
 
-    if (user) {
-      try {
-        await api.post('/projects', payload)
-        toast.success('Votre demande a été enregistrée avec succès !')
-        setSubmitted(true)
-      } catch {
-        toast.error('Une erreur est survenue. Veuillez réessayer.')
-      }
-    } else {
-      toast.success('Simulation enregistrée localement.')
+  const handleSubmit = async () => {
+    setSubmitting(true)
+    try {
+      await submitApplication()
+      toast.success('Votre demande a été enregistrée avec succès !')
       setSubmitted(true)
+    } catch {
+      toast.error('Une erreur est survenue. Veuillez réessayer.')
+    } finally {
+      setSubmitting(false)
     }
-    setSubmitting(false)
   }
 
   if (submitted) {
@@ -150,25 +151,18 @@ export default function SimulatorPage() {
                 </p>
               </div>
 
-              {!user && (
-                <div style={{
-                  background: 'var(--blue-bg)',
-                  border: '1px solid var(--blue-border)',
-                  borderRadius: 'var(--radius)',
-                  padding: '14px 18px',
-                  marginBottom: 24,
-                }}>
-                  <p style={{ fontSize: 14, margin: 0, color: 'var(--text-2)' }}>
-                    Pour suivre votre dossier et bénéficier d'un accompagnement complet, <Link to="/register" style={{ fontWeight: 700 }}>créez un compte gratuit</Link>.
-                  </p>
-                </div>
-              )}
-
               <div className="d-flex gap-3 justify-content-center flex-wrap">
                 <Link to="/" className="btn btn-ghost">Retour à l'accueil</Link>
-                <Link to="/simulateur" className="btn btn-primary" onClick={() => { setSubmitted(false); setStep(1); setForm({ projectType: '', amount: '', employmentStatus: '', monthlyIncome: '', country: '', lastName: '', firstName: '', email: '', phone: '' }) }}>
-                  Nouvelle simulation
-                </Link>
+                {user ? (
+                  <Link to="/dashboard" state={{ page: 'projects' }} className="btn btn-primary">Suivre mon dossier</Link>
+                ) : (
+                  <Link
+                    to={`/register?email=${encodeURIComponent(form.email.trim())}&firstName=${encodeURIComponent(form.firstName.trim())}&lastName=${encodeURIComponent(form.lastName.trim())}`}
+                    className="btn btn-primary"
+                  >
+                    Créer mon compte pour suivre mon projet
+                  </Link>
+                )}
               </div>
             </motion.div>
           </div>

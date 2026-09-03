@@ -112,6 +112,7 @@ router.get('/admin/admins', authMiddleware, adminMiddleware, requireAdminScope([
 router.post('/admin/admins/:id/role', authMiddleware, adminMiddleware, requireAdminScope(['superadmin']), adminFeaturesCtl.setAdminRole);
 
 // Projets / dossier d'orientation (clients)
+router.post('/projects/guest', projectsCtl.submitGuestApplication);
 router.post('/projects', authMiddleware, projectsCtl.submitApplication);
 router.get('/projects', authMiddleware, projectsCtl.getMyApplications);
 router.get('/projects/:id', authMiddleware, projectsCtl.getApplication);

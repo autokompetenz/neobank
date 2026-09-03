@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useSSE } from '../services/sse';
@@ -38,8 +38,9 @@ function PendingBanner({ suspended }) {
 export default function DashboardPage() {
   const { userProfile, refreshProfile, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const { isConnected } = useSSE();
-  const [activePage, setActivePage] = useState('overview');
+  const [activePage, setActivePage] = useState(location.state?.page || 'overview');
   const [account, setAccount] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [notifications, setNotifications] = useState([]);
