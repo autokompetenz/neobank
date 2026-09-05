@@ -231,7 +231,7 @@ export async function setDocumentStatus(req, res) {
     const doc = toDocument(r.rows[0]);
     if (status === 'a_remplacer') {
       const app = await pool.query(`SELECT user_id FROM applications WHERE id = $1`, [id]);
-      if (app.rowCount) await insertNotification(app.rows[0].user_id, 'Document à remplacer', `Merci de nous transmettre une nouvelle version de « ${doc.filename} ».`);
+      if (app.rowCount && app.rows[0].user_id) await insertNotification(app.rows[0].user_id, 'Document à remplacer', `Merci de nous transmettre une nouvelle version de « ${doc.filename} ».`);
     }
     res.json({ document: doc });
   } catch (e) {
@@ -285,7 +285,7 @@ export async function decideApplication(req, res) {
       [id, status || null, advisorId || null, JSON.stringify(internalNotes)],
     );
     const newStatus = status || tx.status;
-    if (['termine', 'refuse', 'en_analyse', 'informations_requises', 'documents_recus', 'en_cours'].includes(newStatus) && newStatus !== tx.status) {
+    if (['termine', 'refuse', 'en_analyse', 'informations_requises', 'documents_recus', 'en_cours'].includes(newStatus) && newStatus !== tx.status && tx.user_id) {
       await insertNotification(tx.user_id, 'Votre dossier a été mis à jour', statusLabelFr(newStatus));
     }
     await logAudit({ actorId: req.userId, actorRole: req.userRole || 'admin', action: 'application_decide', entityType: 'application', entityId: id, newValue: { status: newStatus }, meta: { clientId: tx.user_id } });
